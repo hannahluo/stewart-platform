@@ -16,7 +16,17 @@ float P[3];
 float LegVectors[NumLegs][3];
 float Lengths[NumLegs];
 
-//roll-x w pitch-y theta yaw-z tri
+void initDistanceToLegsFromOrigin()
+{
+	for(int i = 0; i < NumLegs; ++i)
+    {
+    	float angle = ( PI / 3 ) * i;
+    	DistanceToLegsFromOrigin[i][0] = HexDistanceToLeg * cos(angle);
+    	DistanceToLegsFromOrigin[i][1] = HexDistanceToLeg * sin(angle);
+    	DistanceToLegsFromOrigin[i][2] = 0;
+	}
+}
+
 void fillRotationMatrix(float roll, float pitch, float yaw)
 {
     RotationMatrix[0][0] = cos(yaw)*cos(pitch);
@@ -74,30 +84,30 @@ float computePlatformLengthBetweenLegs(int a, int b)
 	return sqrt( (aPos[0] - bPos[0])*(aPos[0] - bPos[0]) + (aPos[1] - bPos[1])*(aPos[1] - bPos[1]) + (aPos[2] - bPos[2])*(aPos[2] - bPos[2]) );
 }
 
-int main()
+void CalculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, float swayAngle, float heaveAngle)
 {
-    fillRotationMatrix(0,0,0);
-    
-    for(int i = 0; i < NumLegs; ++i)
-    {
-    	float angle = ( PI / 3 ) * i;
-    	DistanceToLegsFromOrigin[i][0] = HexDistanceToLeg * cos(angle);
-    	DistanceToLegsFromOrigin[i][1] = HexDistanceToLeg * sin(angle);
-    	DistanceToLegsFromOrigin[i][2] = 0;
-	}
-    
-    float yaw = PI/6;
-    float pitch = 0;
-    float roll = PI/4;
-    
-    fillRotationMatrix(roll,pitch,yaw);
-    computeTVector(roll, pitch, yaw);
-    
-    for(int i = 0; i < NumLegs; ++i)
+	fillRotationMatrix(roll,pitch,yaw);
+	computeTVector(surgeAngle, swayAngle, heaveAngle);
+	for(int i = 0; i < NumLegs; ++i)
     {
     	computeResultantRotatedPVectorForLeg(i);
     	computeVectorForLeg(i);
     }
+}
+
+int main()
+{
+    initDistanceToLegsFromOrigin();
+    
+    float yaw = PI/6;
+    float pitch = 0;
+    float roll = PI/4;
+    float surgeAngle = 0;
+    float swayAngle = 0;
+    float heaveAngle = 0;
+    
+    CalculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+
     cout << "RotationMatrix --------------------------------------------------------" << endl;
     for(int i=0;i<3;++i)
     {
