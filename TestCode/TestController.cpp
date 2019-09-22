@@ -8,12 +8,13 @@ const float PI = 3.14159265;
 const float Height = 5;
 const float HexDistanceToLeg = 3;
 const int NumLegs = 6;
-float DistanceToLegs[NumLegs][3];
+float DistanceToLegsFromOrigin[NumLegs][3];
 
 float RotationMatrix[3][3];
 float T[3];
 float P[3];
-float LegLengths[6];
+float LegVectors[NumLegs][3];
+float Lengths[NumLegs];
 
 //roll-x w pitch-y theta yaw-z tri
 void fillRotationMatrix(float roll, float pitch, float yaw)
@@ -39,9 +40,38 @@ void computeTVector(float roll, float pitch, float yaw)
 
 void computeResultantRotatedPVectorForLeg(int i)
 {
-	P[0] = RotationMatrix[0][0] * DistanceToLegs[i][0] + RotationMatrix[0][1] * DistanceToLegs[i][1] + RotationMatrix[0][2] * DistanceToLegs[i][2];
-	P[1] = RotationMatrix[1][0] * DistanceToLegs[i][0] + RotationMatrix[1][1] * DistanceToLegs[i][1] + RotationMatrix[1][2] * DistanceToLegs[i][2];
-	P[2] = RotationMatrix[2][0] * DistanceToLegs[i][0] + RotationMatrix[2][1] * DistanceToLegs[i][1] + RotationMatrix[2][2] * DistanceToLegs[i][2];
+	P[0] = RotationMatrix[0][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[0][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[0][2] * DistanceToLegsFromOrigin[i][2];
+	P[1] = RotationMatrix[1][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[1][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[1][2] * DistanceToLegsFromOrigin[i][2];
+	P[2] = RotationMatrix[2][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[2][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[2][2] * DistanceToLegsFromOrigin[i][2];
+}
+
+void computeVectorForLeg(int i)
+{
+	LegVectors[i][0] = T[0] + P[0] - DistanceToLegsFromOrigin[i][0];
+	LegVectors[i][1] = T[1] + P[1] - DistanceToLegsFromOrigin[i][1];
+	LegVectors[i][2] = T[2] + P[2] - DistanceToLegsFromOrigin[i][2];
+}
+
+// Test function to see if the leg positions actually make a viable hexagon - Not optimized because it won't matter in production
+float computePlatformLengthBetweenLegs(int a, int b)
+{
+	float aPos[3] = 
+	{
+		DistanceToLegsFromOrigin[a][0] + LegVectors[a][0],
+		DistanceToLegsFromOrigin[a][1] + LegVectors[a][1],
+		DistanceToLegsFromOrigin[a][2] + LegVectors[a][2]
+	};
+	
+	float bPos[3] = 
+	{
+		DistanceToLegsFromOrigin[b][0] + LegVectors[b][0],
+		DistanceToLegsFromOrigin[b][1] + LegVectors[b][1],
+		DistanceToLegsFromOrigin[b][2] + LegVectors[b][2]
+	};
+	
+	//cout << endl << "    [" << aPos[0] << "," << aPos[1] << "," << aPos[2] << "] [" << bPos[0] << "," << bPos[1] << "," << bPos[2] << "]" << endl;
+	
+	return sqrt( (aPos[0] - bPos[0])*(aPos[0] - bPos[0]) + (aPos[1] - bPos[1])*(aPos[1] - bPos[1]) + (aPos[2] - bPos[2])*(aPos[2] - bPos[2]) );
 }
 
 int main()
@@ -50,19 +80,25 @@ int main()
     
     for(int i = 0; i < NumLegs; ++i)
     {
-    	float angle = ( PI / 6 ) * i;
-    	DistanceToLegs[i][0] = HexDistanceToLeg * cos(angle);
-    	DistanceToLegs[i][1] = HexDistanceToLeg * sin(angle);
-    	DistanceToLegs[i][2] = 0;
+    	float angle = ( PI / 3 ) * i;
+    	DistanceToLegsFromOrigin[i][0] = HexDistanceToLeg * cos(angle);
+    	DistanceToLegsFromOrigin[i][1] = HexDistanceToLeg * sin(angle);
+    	DistanceToLegsFromOrigin[i][2] = 0;
 	}
     
-    float yaw = PI/4;
+    float yaw = PI/6;
     float pitch = 0;
     float roll = PI/4;
     
     fillRotationMatrix(roll,pitch,yaw);
     computeTVector(roll, pitch, yaw);
     
+    for(int i = 0; i < NumLegs; ++i)
+    {
+    	computeResultantRotatedPVectorForLeg(i);
+    	computeVectorForLeg(i);
+    }
+    cout << "RotationMatrix --------------------------------------------------------" << endl;
     for(int i=0;i<3;++i)
     {
     	for(int j=0;j<3;++j)
@@ -71,10 +107,22 @@ int main()
 		}
 		cout << endl;
 	}
-	
+	cout << endl << "T Vector --------------------------------------------------------------" << endl;	
 	for(int i=0;i<3;++i)
     {
-    	cout << T[i] << " ";
+    	cout << T[i] << ",";
 	}
+	cout << endl << "Leg Vectors -----------------------------------------------------------" << endl;
+	for(int i=0;i<NumLegs;++i)
+    {
+    	cout <<"Leg " << i << ": " << LegVectors[i][0] << "," << LegVectors[i][1] << "," << LegVectors[i][0] << endl;
+	}
+	
+	cout << endl << "Platform Sizes ---------------------------------------------------------" << endl;
+	for(int i=0; i < NumLegs; ++i)
+	{
+		cout << computePlatformLengthBetweenLegs(i, (i + 1) % NumLegs) << endl;
+	}
+	
     return 0;
 }
