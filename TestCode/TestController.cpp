@@ -99,12 +99,12 @@ int main()
 {
     initDistanceToLegsFromOrigin();
     
-    float yaw = PI/6;
+    float yaw = 0;
     float pitch = 0;
-    float roll = PI/4;
-    float surgeAngle = 0;
-    float swayAngle = 0;
-    float heaveAngle = 0;
+    float roll = 0;
+    float surgeAngle = PI/6;
+    float swayAngle = PI/6;
+    float heaveAngle = PI/6;
     
     CalculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
 
