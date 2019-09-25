@@ -92,7 +92,7 @@ void computeVectorForLeg(int i)
 // Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
 float getPercentHeightLeg(int i)
 {
-  return getLengthOfVector3(LegVectors[i]) / T[2];
+  return LegVectors[i][2] / T[2];
 }
 
 // Test function to see if the leg positions actually make a viable hexagon - Not optimized because it won't matter in production
