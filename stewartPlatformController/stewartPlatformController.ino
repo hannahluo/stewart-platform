@@ -49,6 +49,11 @@ void initDistanceToLegsFromOrigin()
   }
 }
 
+float getLengthOfVector3(const float vector[3])
+{
+  return sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+}
+
 void fillRotationMatrix(float roll, float pitch, float yaw)
 {
     RotationMatrix[0][0] = cos(yaw)*cos(pitch);
@@ -82,6 +87,12 @@ void computeVectorForLeg(int i)
   LegVectors[i][0] = T[0] + P[0] - DistanceToLegsFromOrigin[i][0];
   LegVectors[i][1] = T[1] + P[1] - DistanceToLegsFromOrigin[i][1];
   LegVectors[i][2] = T[2] + P[2] - DistanceToLegsFromOrigin[i][2];
+}
+
+// Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
+float getPercentHeightLeg(int i)
+{
+  return getLengthOfVector3(LegVectors[i]) / T[2];
 }
 
 // Test function to see if the leg positions actually make a viable hexagon - Not optimized because it won't matter in production
