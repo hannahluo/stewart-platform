@@ -6,12 +6,12 @@
 #define JOY_Y_PIN A1
 #define JOY_BTN_PIN 2 // *** Pick the pin
 
+#define SERVO_0_PIN 9 // *** Pick the pin
 #define SERVO_1_PIN 9 // *** Pick the pin
 #define SERVO_2_PIN 9 // *** Pick the pin
 #define SERVO_3_PIN 9 // *** Pick the pin
 #define SERVO_4_PIN 9 // *** Pick the pin
 #define SERVO_5_PIN 9 // *** Pick the pin
-#define SERVO_6_PIN 9 // *** Pick the pin
 
 #define DEAD_ZONE_MIN 410
 #define DEAD_ZONE_MAX 614
@@ -24,16 +24,20 @@
 #define HEIGHT 5
 #define DISTANCE_TO_LEG 3
 #define NUM_LEGS 6
+#define HORN_LENGTH = 0 // measure
+#define ROD_LENGTH = 0 // measure
 
+Servo servo_0;
 Servo servo_1;
 Servo servo_2;
 Servo servo_3;
 Servo servo_4;
 Servo servo_5;
-Servo servo_6;
 
 int servo_min[6] = {5,5,5,5,5,5};
 int servo_max[6] = {175,175,175,175,175,175};
+int servo_angle[6] = {0,0,0,0,0,0}; // measure
+Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3];
 float RotationMatrix[3][3];
@@ -130,14 +134,29 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
     }
 }
 
+void writeToServos() {
+  float e, f, g;
+  float legLength, legX, legY, legZ;
+  float alpha;
+  for(int i = 0; i < NUM_LEGS; ++i) {
+    legLength = sqrt(LegVectors[i][0]*LegVectors[i][0] + LegVectors[i][1]*LegVectors[i][1] + LegVectors[i][2]*LegVectors[i][2]);
+    e = 2*HORN_LENGTH*abs(LegVectors[i][2]);
+    f = 2*HORN_LENGTH*(LegVectors[i][0]*cos(servo_angle[i]) + LegVectors[i][1]*cos(servo_angle[i]));
+    g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
+    alpha = asin(g/sqrt(e*e + f*f)) - atan2(f, e);
+    constrain(alpha, servo_min[i], servo_max[i]);
+    servos[i].writeMicroseconds(alpha);
+  }
+}
+
 void setup()
 {
+  servo_0.attach(SERVO_0_PIN);
   servo_1.attach(SERVO_1_PIN);
   servo_2.attach(SERVO_2_PIN);
   servo_3.attach(SERVO_3_PIN);
   servo_4.attach(SERVO_4_PIN);
   servo_5.attach(SERVO_5_PIN);
-  servo_6.attach(SERVO_6_PIN);
 
   pinMode(JOY_X_PIN, INPUT);
   pinMode(JOY_Y_PIN, INPUT);
