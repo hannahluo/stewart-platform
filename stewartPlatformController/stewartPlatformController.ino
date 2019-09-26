@@ -17,6 +17,10 @@
 #define DEAD_ZONE_MAX 614
 #define PRESSED 1
 
+#define X 0 
+#define Y 1
+#define Z 2
+
 #define HEIGHT 5
 #define DISTANCE_TO_LEG 3
 #define NUM_LEGS 6
@@ -43,9 +47,9 @@ void initDistanceToLegsFromOrigin()
   for(int i = 0; i < NUM_LEGS; ++i)
     {
       float angle = ( PI / 3 ) * i;
-      DistanceToLegsFromOrigin[i][0] = DISTANCE_TO_LEG * cos(angle);
-      DistanceToLegsFromOrigin[i][1] = DISTANCE_TO_LEG * sin(angle);
-      DistanceToLegsFromOrigin[i][2] = 0;
+      DistanceToLegsFromOrigin[i][X] = DISTANCE_TO_LEG * cos(angle);
+      DistanceToLegsFromOrigin[i][Y] = DISTANCE_TO_LEG * sin(angle);
+      DistanceToLegsFromOrigin[i][Z] = 0;
   }
 }
 
@@ -69,30 +73,30 @@ void fillRotationMatrix(float roll, float pitch, float yaw)
 
 void computeTVector(float roll, float pitch, float yaw)
 {
-    T[2] = HEIGHT * cos(yaw);
+    T[Z] = HEIGHT * cos(yaw);
     float xyLength = HEIGHT * sin(yaw);
-    T[1] = xyLength * sin(roll);
-    T[0] = xyLength * cos(roll);
+    T[Y] = xyLength * sin(roll);
+    T[X] = xyLength * cos(roll);
 }
 
 void computeResultantRotatedPVectorForLeg(int i)
 {
-  P[0] = RotationMatrix[0][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[0][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[0][2] * DistanceToLegsFromOrigin[i][2];
-  P[1] = RotationMatrix[1][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[1][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[1][2] * DistanceToLegsFromOrigin[i][2];
-  P[2] = RotationMatrix[2][0] * DistanceToLegsFromOrigin[i][0] + RotationMatrix[2][1] * DistanceToLegsFromOrigin[i][1] + RotationMatrix[2][2] * DistanceToLegsFromOrigin[i][2];
+  P[X] = RotationMatrix[0][0] * DistanceToLegsFromOrigin[i][X] + RotationMatrix[0][1] * DistanceToLegsFromOrigin[i][Y] + RotationMatrix[0][2] * DistanceToLegsFromOrigin[i][Z];
+  P[Y] = RotationMatrix[1][0] * DistanceToLegsFromOrigin[i][X] + RotationMatrix[1][1] * DistanceToLegsFromOrigin[i][Y] + RotationMatrix[1][2] * DistanceToLegsFromOrigin[i][Z];
+  P[Z] = RotationMatrix[2][0] * DistanceToLegsFromOrigin[i][X] + RotationMatrix[2][1] * DistanceToLegsFromOrigin[i][Y] + RotationMatrix[2][2] * DistanceToLegsFromOrigin[i][Z];
 }
 
 void computeVectorForLeg(int i)
 {
-  LegVectors[i][0] = T[0] + P[0] - DistanceToLegsFromOrigin[i][0];
-  LegVectors[i][1] = T[1] + P[1] - DistanceToLegsFromOrigin[i][1];
-  LegVectors[i][2] = T[2] + P[2] - DistanceToLegsFromOrigin[i][2];
+  LegVectors[i][X] = T[X] + P[X] - DistanceToLegsFromOrigin[i][X];
+  LegVectors[i][Y] = T[Y] + P[Y] - DistanceToLegsFromOrigin[i][Y];
+  LegVectors[i][Z] = T[Z] + P[Z] - DistanceToLegsFromOrigin[i][Z];
 }
 
 // Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
 float getPercentHeightLeg(int i)
 {
-  return LegVectors[i][2] / T[2];
+  return LegVectors[i][Z] / T[Z];
 }
 
 // Test function to see if the leg positions actually make a viable hexagon - Not optimized because it won't matter in production
@@ -100,19 +104,19 @@ float computePlatformLengthBetweenLegs(int a, int b)
 {
   float aPos[3] = 
   {
-    DistanceToLegsFromOrigin[a][0] + LegVectors[a][0],
-    DistanceToLegsFromOrigin[a][1] + LegVectors[a][1],
-    DistanceToLegsFromOrigin[a][2] + LegVectors[a][2]
+    DistanceToLegsFromOrigin[a][X] + LegVectors[a][X],
+    DistanceToLegsFromOrigin[a][Y] + LegVectors[a][Y],
+    DistanceToLegsFromOrigin[a][Z] + LegVectors[a][Z]
   };
   
   float bPos[3] = 
   {
-    DistanceToLegsFromOrigin[b][0] + LegVectors[b][0],
-    DistanceToLegsFromOrigin[b][1] + LegVectors[b][1],
-    DistanceToLegsFromOrigin[b][2] + LegVectors[b][2]
+    DistanceToLegsFromOrigin[b][X] + LegVectors[b][X],
+    DistanceToLegsFromOrigin[b][Y] + LegVectors[b][Y],
+    DistanceToLegsFromOrigin[b][Z] + LegVectors[b][Z]
   };
 
-  return sqrt( (aPos[0] - bPos[0])*(aPos[0] - bPos[0]) + (aPos[1] - bPos[1])*(aPos[1] - bPos[1]) + (aPos[2] - bPos[2])*(aPos[2] - bPos[2]) );
+  return sqrt( (aPos[X] - bPos[X])*(aPos[X] - bPos[X]) + (aPos[Y] - bPos[Y])*(aPos[Y] - bPos[Y]) + (aPos[Z] - bPos[Z])*(aPos[Z] - bPos[Z]) );
 }
 
 void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, float swayAngle, float heaveAngle)
