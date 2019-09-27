@@ -139,9 +139,9 @@ void writeToServos() {
   float legLength, legX, legY, legZ;
   float alpha;
   for(int i = 0; i < NUM_LEGS; ++i) {
-    legLength = sqrt(LegVectors[i][0]*LegVectors[i][0] + LegVectors[i][1]*LegVectors[i][1] + LegVectors[i][2]*LegVectors[i][2]);
-    e = 2*HORN_LENGTH*abs(LegVectors[i][2]);
-    f = 2*HORN_LENGTH*(LegVectors[i][0]*cos(servo_angle[i]) + LegVectors[i][1]*cos(servo_angle[i]));
+    legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
+    e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
+    f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*cos(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = asin(g/sqrt(e*e + f*f)) - atan2(f, e);
     constrain(alpha, servo_min[i], servo_max[i]);
