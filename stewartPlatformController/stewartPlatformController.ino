@@ -24,8 +24,8 @@
 #define HEIGHT 5
 #define DISTANCE_TO_LEG 3
 #define NUM_LEGS 6
-#define HORN_LENGTH = 0 // measure
-#define ROD_LENGTH = 0 // measure
+#define HORN_LENGTH 1.2
+#define ROD_LENGTH 11.2083
 
 Servo servo_0;
 Servo servo_1;
