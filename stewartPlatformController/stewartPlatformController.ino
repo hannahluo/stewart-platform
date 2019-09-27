@@ -4,14 +4,14 @@
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
-#define JOY_BTN_PIN 2 // *** Pick the pin
+#define JOY_BTN_PIN 22 // *** Pick the pin
 
-#define SERVO_0_PIN 9 // *** Pick the pin
-#define SERVO_1_PIN 9 // *** Pick the pin
-#define SERVO_2_PIN 9 // *** Pick the pin
-#define SERVO_3_PIN 9 // *** Pick the pin
-#define SERVO_4_PIN 9 // *** Pick the pin
-#define SERVO_5_PIN 9 // *** Pick the pin
+#define SERVO_0_PIN 2 // *** Pick the pin
+#define SERVO_1_PIN 3 // *** Pick the pin
+#define SERVO_2_PIN 4 // *** Pick the pin
+#define SERVO_3_PIN 5 // *** Pick the pin
+#define SERVO_4_PIN 6 // *** Pick the pin
+#define SERVO_5_PIN 7 // *** Pick the pin
 
 #define DEAD_ZONE_MIN 410
 #define DEAD_ZONE_MAX 614
