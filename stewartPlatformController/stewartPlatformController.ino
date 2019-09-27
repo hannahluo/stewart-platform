@@ -178,12 +178,14 @@ void loop()
   
   while (/*digitalRead(buttonPin) != PRESSED*/true)
   {
-    int x = analogRead(JOY_X_PIN);
-    int y = analogRead(JOY_Y_PIN);
-    //int z = calc_z_val(x,y);
+    for(int i = 0; i < 6; ++i)
+    {
+      servos[i].writeMicroseconds(0);
+      delay(8000);
+      servos[i].writeMicroseconds(180);
+      delay(8000);
+    }
     
-    // send x,y,z to function
-    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
   }
 }
 
