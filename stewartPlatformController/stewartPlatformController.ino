@@ -4,18 +4,16 @@
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
-#define JOY_BTN_PIN 22 // *** Pick the pin
+#define JOY_BTN_PIN 52
 
-#define SERVO_0_PIN 2 // *** Pick the pin
-#define SERVO_1_PIN 3 // *** Pick the pin
-#define SERVO_2_PIN 4 // *** Pick the pin
-#define SERVO_3_PIN 5 // *** Pick the pin
-#define SERVO_4_PIN 6 // *** Pick the pin
-#define SERVO_5_PIN 7 // *** Pick the pin
+#define SERVO_0_PIN 2
+#define SERVO_1_PIN 3
+#define SERVO_2_PIN 4
+#define SERVO_3_PIN 5
+#define SERVO_4_PIN 6
+#define SERVO_5_PIN 7
 
-#define DEAD_ZONE_MIN 410
-#define DEAD_ZONE_MAX 614
-#define PRESSED 1
+#define PRESSED 0
 
 #define X 0 
 #define Y 1
@@ -24,8 +22,13 @@
 #define HEIGHT 5
 #define DISTANCE_TO_LEG 3
 #define NUM_LEGS 6
+<<<<<<< Updated upstream
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
+=======
+#define HORN_LENGTH  0 // measure
+#define ROD_LENGTH  0 // measure
+>>>>>>> Stashed changes
 
 Servo servo_0;
 Servo servo_1;
@@ -175,9 +178,10 @@ void loop()
   float surgeAngle = PI/6;
   float swayAngle = PI/6;
   float heaveAngle = PI/6;
-  
-  while (/*digitalRead(buttonPin) != PRESSED*/true)
+
+  while (digitalRead(JOY_BTN_PIN) != PRESSED)
   {
+<<<<<<< Updated upstream
     for(int i = 0; i < 6; ++i)
     {
       for(int j=0; j<6; ++i)
@@ -186,6 +190,36 @@ void loop()
         delay(10000);
       }
     }
+=======
+    int x = analogRead(JOY_X_PIN);
+    int y = analogRead(JOY_Y_PIN);
+    int x_new = convert_xy_value(x);
+    int y_new = convert_xy_value(y);
+    int z = calc_z_angle_val(x,y);
+
+    Serial.println("--------------");
+    Serial.print("X: ");
+    Serial.println(x);
+    Serial.print("Y: ");
+    Serial.println(y);
+    Serial.print("X CONVERTED: ");
+    Serial.println(x_new);
+    Serial.print("Y CONVERTED: ");
+    Serial.println(y_new);
+    Serial.print("Z: ");
+    Serial.println(z);
+    
+    // send x,y,z to function
+    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+    delay(500);
+  }
+
+  while (digitalRead(JOY_BTN_PIN) == PRESSED)
+  {
+    delay(100);
+    Serial.println("Button pushed");
+    Serial.println(digitalRead(JOY_BTN_PIN));
+>>>>>>> Stashed changes
   }
 }
 
