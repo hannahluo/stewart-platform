@@ -180,12 +180,12 @@ void loop()
   {
     for(int i = 0; i < 6; ++i)
     {
-      servos[i].writeMicroseconds(0);
-      delay(8000);
-      servos[i].writeMicroseconds(180);
-      delay(8000);
+      for(int j=0; j<6; ++i)
+      {
+        servos[i].writeMicroseconds(j * 30);
+        delay(10000);
+      }
     }
-    
   }
 }
 
