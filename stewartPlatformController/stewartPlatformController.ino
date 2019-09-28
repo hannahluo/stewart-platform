@@ -167,11 +167,12 @@ void setup()
 
   Serial.begin(9600);
 
-  initDistanceToLegsFromOrigin();
+  // initDistanceToLegsFromOrigin();
 }
 
 void loop()
 {
+<<<<<<< HEAD
   float yaw = 0;
   float pitch = 0;
   float roll = 0;
@@ -185,10 +186,20 @@ void loop()
     for(int i = 0; i < 6; ++i)
     {
       for(int j=0; j<6; ++i)
+=======
+      for(int i=0; i < 7; ++i)
+>>>>>>> trying our best to characterize motors
       {
-        servos[i].writeMicroseconds(j * 30);
-        delay(10000);
+        servo_0.write(i * 30);
+        Serial.print("servo: ");
+        Serial.print(0);
+        Serial.print(" angle: ");
+        Serial.print(i*30);
+        Serial.println();
+        delay(1000);
+        Serial.print("hello");
       }
+<<<<<<< HEAD
     }
 =======
     int x = analogRead(JOY_X_PIN);
@@ -221,5 +232,31 @@ void loop()
     Serial.println(digitalRead(JOY_BTN_PIN));
 >>>>>>> Stashed changes
   }
+=======
+
+//  float yaw = 0;
+//  float pitch = 0;
+//  float roll = 0;
+//  float surgeAngle = PI/6;
+//  float swayAngle = PI/6;
+//  float heaveAngle = PI/6;
+//  
+//  while (/*digitalRead(buttonPin) != PRESSED*/true)
+//  {
+//    for(int i = 0; i < 6; ++i)
+//    {
+//      for(int j=0; j < 7; ++j)
+//      {
+//        servos[i].write(j * 30);
+//        Serial.print("servo: ");
+//        Serial.print(i);
+//        Serial.print(" angle: ");
+//        Serial.print(j*30);
+//        Serial.println();
+//        delay(5000);
+//      }
+//    }
+//  }
+>>>>>>> trying our best to characterize motors
 }
 
