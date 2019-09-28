@@ -4,16 +4,18 @@
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
-#define JOY_BTN_PIN 52
+#define JOY_BTN_PIN 22 // *** Pick the pin
 
-#define SERVO_0_PIN 2
-#define SERVO_1_PIN 3
-#define SERVO_2_PIN 4
-#define SERVO_3_PIN 5
-#define SERVO_4_PIN 6
-#define SERVO_5_PIN 7
+#define SERVO_0_PIN 2 // *** Pick the pin
+#define SERVO_1_PIN 3 // *** Pick the pin
+#define SERVO_2_PIN 4 // *** Pick the pin
+#define SERVO_3_PIN 5 // *** Pick the pin
+#define SERVO_4_PIN 6 // *** Pick the pin
+#define SERVO_5_PIN 7 // *** Pick the pin
 
-#define PRESSED 0
+#define DEAD_ZONE_MIN 410
+#define DEAD_ZONE_MAX 614
+#define PRESSED 1
 
 #define X 0 
 #define Y 1
@@ -32,8 +34,8 @@ Servo servo_3;
 Servo servo_4;
 Servo servo_5;
 
-int servo_min[6] = {5,5,5,5,5,5};
-int servo_max[6] = {175,175,175,175,175,175};
+int servo_min[6] = {0,0,0,0,0,0};
+int servo_max[6] = {135,135,180,175,135,175};
 int servo_angle[6] = {0,0,0,0,0,0}; // measure
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
@@ -142,8 +144,9 @@ void writeToServos() {
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*cos(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = asin(g/sqrt(e*e + f*f)) - atan2(f, e);
+    // adjust the ranges to the new values
     constrain(alpha, servo_min[i], servo_max[i]);
-    servos[i].writeMicroseconds(alpha);
+    servos[i].write(alpha);
   }
 }
 
@@ -167,58 +170,23 @@ void setup()
 
 void loop()
 {
-  float yaw = 0;
-  float pitch = 0;
-  float roll = 0;
-  float surgeAngle = PI/6;
-  float swayAngle = PI/6;
-  float heaveAngle = PI/6;
 
-  while (digitalRead(JOY_BTN_PIN) != PRESSED)
-  {
-    for(int i = 0; i < 6; ++i)
-    {
-      for(int j=0; j<6; ++i)
-      {
-        servo_0.write(i * 30);
-        Serial.print("servo: ");
-        Serial.print(0);
-        Serial.print(" angle: ");
-        Serial.print(i*30);
-        Serial.println();
-        delay(1000);
-        Serial.print("hello");
-      }
-    }
-    
-    int x = analogRead(JOY_X_PIN);
-    int y = analogRead(JOY_Y_PIN);
-    int x_new = convert_xy_value(x);
-    int y_new = convert_xy_value(y);
-    int z = calc_z_angle_val(x,y);
+//  float yaw = 0;
+//  float pitch = 0;
+//  float roll = 0;
+//  float surgeAngle = PI/6;
+//  float swayAngle = PI/6;
+//  float heaveAngle = PI/6;
 
-    Serial.println("--------------");
-    Serial.print("X: ");
-    Serial.println(x);
-    Serial.print("Y: ");
-    Serial.println(y);
-    Serial.print("X CONVERTED: ");
-    Serial.println(x_new);
-    Serial.print("Y CONVERTED: ");
-    Serial.println(y_new);
-    Serial.print("Z: ");
-    Serial.println(z);
-    
-    // send x,y,z to function
-    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
-    delay(500);
+  for(int j = 0; j < 6; ++j) {
+      servos[j].write(servo_min[j]);
+      delay(1000);
   }
-
-  while (digitalRead(JOY_BTN_PIN) == PRESSED)
-  {
-    delay(100);
-    Serial.println("Button pushed");
-    Serial.println(digitalRead(JOY_BTN_PIN));
+  delay(2500);
+  for(int j = 0; j < 6; ++j) {
+      servos[j].write(servo_max[j]);
+      delay(1000);
   }
+  delay(2500);
 }
 
