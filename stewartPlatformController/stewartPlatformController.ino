@@ -17,6 +17,8 @@
 #define DEAD_ZONE_MAX 614
 #define PRESSED 1
 
+#define SERVO_MAX 180
+#define SERVO_MIN 0
 #define X 0 
 #define Y 1
 #define Z 2
@@ -144,9 +146,9 @@ void writeToServos() {
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*cos(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = asin(g/sqrt(e*e + f*f)) - atan2(f, e);
-    // adjust the ranges to the new values
+    alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
     constrain(alpha, servo_min[i], servo_max[i]);
-    servos[i].write(alpha);
+    servos[i].write((int)alpha);
   }
 }
 
