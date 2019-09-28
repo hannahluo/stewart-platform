@@ -145,7 +145,7 @@ void writeToServos() {
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*cos(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
-    alpha = asin(g/sqrt(e*e + f*f)) - atan2(f, e);
+    alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
     constrain(alpha, servo_min[i], servo_max[i]);
     servos[i].write((int)alpha);
