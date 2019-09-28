@@ -22,13 +22,8 @@
 #define HEIGHT 5
 #define DISTANCE_TO_LEG 3
 #define NUM_LEGS 6
-<<<<<<< Updated upstream
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-=======
-#define HORN_LENGTH  0 // measure
-#define ROD_LENGTH  0 // measure
->>>>>>> Stashed changes
 
 Servo servo_0;
 Servo servo_1;
@@ -172,7 +167,6 @@ void setup()
 
 void loop()
 {
-<<<<<<< HEAD
   float yaw = 0;
   float pitch = 0;
   float roll = 0;
@@ -182,13 +176,9 @@ void loop()
 
   while (digitalRead(JOY_BTN_PIN) != PRESSED)
   {
-<<<<<<< Updated upstream
     for(int i = 0; i < 6; ++i)
     {
       for(int j=0; j<6; ++i)
-=======
-      for(int i=0; i < 7; ++i)
->>>>>>> trying our best to characterize motors
       {
         servo_0.write(i * 30);
         Serial.print("servo: ");
@@ -199,9 +189,8 @@ void loop()
         delay(1000);
         Serial.print("hello");
       }
-<<<<<<< HEAD
     }
-=======
+    
     int x = analogRead(JOY_X_PIN);
     int y = analogRead(JOY_Y_PIN);
     int x_new = convert_xy_value(x);
@@ -230,33 +219,6 @@ void loop()
     delay(100);
     Serial.println("Button pushed");
     Serial.println(digitalRead(JOY_BTN_PIN));
->>>>>>> Stashed changes
   }
-=======
-
-//  float yaw = 0;
-//  float pitch = 0;
-//  float roll = 0;
-//  float surgeAngle = PI/6;
-//  float swayAngle = PI/6;
-//  float heaveAngle = PI/6;
-//  
-//  while (/*digitalRead(buttonPin) != PRESSED*/true)
-//  {
-//    for(int i = 0; i < 6; ++i)
-//    {
-//      for(int j=0; j < 7; ++j)
-//      {
-//        servos[i].write(j * 30);
-//        Serial.print("servo: ");
-//        Serial.print(i);
-//        Serial.print(" angle: ");
-//        Serial.print(j*30);
-//        Serial.println();
-//        delay(5000);
-//      }
-//    }
-//  }
->>>>>>> trying our best to characterize motors
 }
 
