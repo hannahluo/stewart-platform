@@ -4,18 +4,18 @@
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
-#define JOY_BTN_PIN 22 // *** Pick the pin
+#define JOY_BTN_PIN 52
 
-#define SERVO_0_PIN 2 // *** Pick the pin
-#define SERVO_1_PIN 3 // *** Pick the pin
-#define SERVO_2_PIN 4 // *** Pick the pin
-#define SERVO_3_PIN 5 // *** Pick the pin
-#define SERVO_4_PIN 6 // *** Pick the pin
-#define SERVO_5_PIN 7 // *** Pick the pin
+#define SERVO_0_PIN 2
+#define SERVO_1_PIN 3
+#define SERVO_2_PIN 4
+#define SERVO_3_PIN 5
+#define SERVO_4_PIN 6
+#define SERVO_5_PIN 7
 
 #define DEAD_ZONE_MIN 410
 #define DEAD_ZONE_MAX 614
-#define PRESSED 1
+#define PRESSED 0
 
 #define SERVO_MAX 180
 #define SERVO_MIN 0
@@ -158,7 +158,7 @@ void writeToServos() {
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    constrain(alpha, servo_min[i], servo_max[i]);it push
+    constrain(alpha, servo_min[i], servo_max[i]);
     
     servos[i].write((int)alpha);
   }
@@ -190,11 +190,35 @@ void setup()
 
 void loop()
 {
+  while (digitalRead(JOY_BTN_PIN) != PRESSED) {
+    int x = analogRead(JOY_X_PIN);
+    int y = analogRead(JOY_Y_PIN);
+    int x_new = convert_xy_value(x);
+    int y_new = convert_xy_value(y);
+    int z = calc_z_angle_val(x,y);
 
-  // read joystick and set roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle
-  calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
-  writeToServos();
+    Serial.println("--------------");
+    Serial.print("X: ");
+    Serial.println(x);
+    Serial.print("Y: ");
+    Serial.println(y);
+    Serial.print("X CONVERTED: ");
+    Serial.println(x_new);
+    Serial.print("Y CONVERTED: ");
+    Serial.println(y_new);
+    Serial.print("Z: ");
+    Serial.println(z);
 
-  delay(2500);
+    // somehow convert x, y, z to yaw, pitch, and roll
+    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+    writeToServos();
+    delay(500);
+  }
+
+  while (digitalRead(JOY_BTN_PIN) == PRESSED) {
+    delay(100);
+    Serial.println("Button pushed");
+    Serial.println(digitalRead(JOY_BTN_PIN));
+  }
 }
 
