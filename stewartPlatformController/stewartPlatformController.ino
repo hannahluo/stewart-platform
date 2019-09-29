@@ -38,7 +38,11 @@ Servo servo_5;
 
 int servo_min[6] = {0,0,0,0,0,0};
 int servo_max[6] = {135,135,180,175,135,175};
-int servo_angle[6] = {0,0,0,0,0,0}; // measure
+// WE NEED TO MEASURE THESE OKAY PLEASE MEASURE THEM BEFORE U TRY TO RUN THE CODE SOMEONE!!
+// https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
+// IT'S THE ANGLE BETA FOUND HERE
+// DO THIS FOR EACH SERVO AND RECORD THE RESULTS IN THE ARRAY BELOW THANKS
+int servo_angle[6] = {0,0,0,0,0,0};
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3];
@@ -48,6 +52,13 @@ float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
 
+float yaw = 0;
+float pitch = 0;
+float roll = 0;
+float surgeAngle = PI/6;
+float swayAngle = PI/6;
+float heaveAngle = PI/6;
+  
 void initDistanceToLegsFromOrigin()
 {
   for(int i = 0; i < NUM_LEGS; ++i)
@@ -147,7 +158,8 @@ void writeToServos() {
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    constrain(alpha, servo_min[i], servo_max[i]);
+    constrain(alpha, servo_min[i], servo_max[i]);it push
+    
     servos[i].write((int)alpha);
   }
 }
@@ -167,28 +179,22 @@ void setup()
 
   Serial.begin(9600);
 
-  // initDistanceToLegsFromOrigin();
+  for(int i = 0; i < 6; ++i) {
+    servos[i].write(servo_min[i]);
+    delay(1000);
+  }
+  delay(2500);
+  
+  initDistanceToLegsFromOrigin();
 }
 
 void loop()
 {
 
-//  float yaw = 0;
-//  float pitch = 0;
-//  float roll = 0;
-//  float surgeAngle = PI/6;
-//  float swayAngle = PI/6;
-//  float heaveAngle = PI/6;
+  // read joystick and set roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle
+  calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+  writeToServos();
 
-  for(int j = 0; j < 6; ++j) {
-      servos[j].write(servo_min[j]);
-      delay(1000);
-  }
-  delay(2500);
-  for(int j = 0; j < 6; ++j) {
-      servos[j].write(servo_max[j]);
-      delay(1000);
-  }
   delay(2500);
 }
 
