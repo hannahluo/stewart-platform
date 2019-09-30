@@ -15,6 +15,9 @@
 
 #define DEAD_ZONE_MIN 410
 #define DEAD_ZONE_MAX 614
+#define MAX_INPUT 1023
+#define MIN_INPUT 0
+
 #define PRESSED 0
 
 #define SERVO_MAX 180
@@ -28,7 +31,7 @@
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-
+#define PLATFORM_LENGTH 17
 Servo servo_0;
 Servo servo_1;
 Servo servo_2;
@@ -51,6 +54,9 @@ float T[3];
 float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
+
+float MaxInputL = (MAX_INPUT - MIN_INPUT) / 2.0; // This makes the max in the corners equal to circles
+float MaxYaw = atan2(ROD_LENGTH + 2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
 
 float yaw = 0;
 float pitch = 0;
@@ -145,6 +151,17 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
       computeResultantRotatedPVectorForLeg(i);
       computeVectorForLeg(i);
     }
+}
+
+float getYaw(int x, int y)
+{
+  float xy = sqrt(pow(x,2) + pow(y,2));
+  return min(xy / MaxInputL, 1.0) * MaxYaw;
+}
+
+float getRoll(int x, int y)
+{
+  return atan2(y,x);
 }
 
 void writeToServos() {
