@@ -57,13 +57,6 @@ float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_INPUT - MIN_INPUT) / 2.0; // This makes the max in the corners equal to circles
 float MaxYaw = atan2(ROD_LENGTH + 2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
-
-float yaw = 0;
-float pitch = 0;
-float roll = 0;
-float surgeAngle = PI/6;
-float swayAngle = PI/6;
-float heaveAngle = PI/6;
   
 void initDistanceToLegsFromOrigin()
 {
@@ -207,12 +200,18 @@ void setup()
 
 void loop()
 {
+  float yaw = 0;
+  float pitch = 0;
+  float roll = 0;
+  float surgeAngle = 0;
+  float swayAngle = 0;
+  float heaveAngle = 0;
+  
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
     int x = analogRead(JOY_X_PIN);
     int y = analogRead(JOY_Y_PIN);
     int x_new = convert_xy_value(x);
     int y_new = convert_xy_value(y);
-    int z = calc_z_angle_val(x,y);
 
     Serial.println("--------------");
     Serial.print("X: ");
@@ -223,10 +222,10 @@ void loop()
     Serial.println(x_new);
     Serial.print("Y CONVERTED: ");
     Serial.println(y_new);
-    Serial.print("Z: ");
-    Serial.println(z);
 
-    // somehow convert x, y, z to yaw, pitch, and roll
+    yaw = getYaw(x_new, y_new);
+    roll = getRoll(x_new, y_new);
+
     calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(500);
