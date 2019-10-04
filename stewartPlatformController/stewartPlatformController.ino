@@ -17,6 +17,8 @@
 #define DEAD_ZONE_MAX 614
 #define MAX_INPUT 1023
 #define MIN_INPUT 0
+#define MAX_CONVERTED_INPUT 50
+#define MIN_CONVERTED_INPUT -50
 
 #define PRESSED 0
 
@@ -55,7 +57,7 @@ float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
 
-float MaxInputL = (MAX_INPUT - MIN_INPUT) / 2.0; // This makes the max in the corners equal to circles
+float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
 float MaxYaw = atan2(ROD_LENGTH + 2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
   
 void initDistanceToLegsFromOrigin()
