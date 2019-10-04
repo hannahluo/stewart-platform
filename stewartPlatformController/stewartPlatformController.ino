@@ -228,6 +228,11 @@ void loop()
     yaw = getYaw(x_new, y_new);
     roll = getRoll(x_new, y_new);
 
+    Serial.print("YAW: ");
+    Serial.println(yaw);
+    Serial.print("ROLL: ");
+    Serial.println(roll);
+    
     calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(500);
