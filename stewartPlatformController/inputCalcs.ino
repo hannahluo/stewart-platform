@@ -12,9 +12,9 @@ double calc_z_angle_val(int x, int y)
 int convert_xy_value(int input)
 {
   if (input > DEAD_ZONE_MAX)
-    return map(input, DEAD_ZONE_MAX, MAX_INPUT, 0, 50);
+    return map(input, DEAD_ZONE_MAX, MAX_INPUT, 0, MAX_CONVERTED_INPUT);
   else if (input < DEAD_ZONE_MIN)
-    return map(input, 0, DEAD_ZONE_MIN, -50, 0);   
+    return map(input, 0, DEAD_ZONE_MIN, MIN_CONVERTED_INPUT, 0);   
   else
     return 0;
 }
