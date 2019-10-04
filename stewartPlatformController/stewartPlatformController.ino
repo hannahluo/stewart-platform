@@ -166,12 +166,18 @@ void writeToServos() {
   for(int i = 0; i < NUM_LEGS; ++i) {
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
-    f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*cos(servo_angle[i]));
+    f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
+    Serial.println((int)alpha * 1000);
     alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
+    Serial.println((int)alpha * 1000);
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
+    Serial.println((int)alpha * 1000);
     constrain(alpha, servo_min[i], servo_max[i]);
-    
+    servo_angle[i] = alpha;
+
+    Serial.println((int)alpha * 1000);
+    alpha = 175;
     servos[i].write((int)alpha);
   }
 }
@@ -190,7 +196,7 @@ void setup()
   pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
 
   Serial.begin(9600);
-
+  Serial.println("START");
   for(int i = 0; i < 6; ++i) {
     servos[i].write(servo_min[i]);
     delay(1000);
@@ -232,7 +238,7 @@ void loop()
     Serial.println(yaw);
     Serial.print("ROLL: ");
     Serial.println(roll);
-    
+
     calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(500);
