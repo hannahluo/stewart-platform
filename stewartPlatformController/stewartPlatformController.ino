@@ -189,8 +189,8 @@ void writeToServos() {
     Serial.println((int)alpha);
     constrain(alpha, servo_min[i], servo_max[i]);
 
-    Serial.println((int)alpha * 1000);
-    servos[i].write((int)alpha);
+    Serial.println(90 - (int)alpha);
+    servos[i].write(90 - (int)alpha);
   }
 }
 
@@ -209,13 +209,13 @@ void setup()
 
   Serial.begin(9600);
   Serial.println("START");
-//  for(int i = 0; i < 6; ++i) {
-//    servos[i].write(servo_min[i]);
-//    delay(1000);
-//  }
+  for(int i = 0; i < 6; ++i) {
+    servos[i].write(servo_min[i]);
+    delay(1000);
+  }
   delay(2500);
   
-//  initDistanceToLegsFromOrigin();
+  initDistanceToLegsFromOrigin();
 }
 
 void loop()
@@ -251,7 +251,7 @@ void loop()
     Serial.print("ROLL: ");
     Serial.println(roll);
 
-    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(500);
   }
