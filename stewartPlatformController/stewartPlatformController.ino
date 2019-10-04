@@ -28,8 +28,8 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 5
-#define DISTANCE_TO_LEG 3
+#define HEIGHT 10
+#define DISTANCE_TO_LEG 7.1
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
@@ -47,7 +47,7 @@ int servo_max[6] = {135,135,180,175,135,175};
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
 // DO THIS FOR EACH SERVO AND RECORD THE RESULTS IN THE ARRAY BELOW THANKS
-int servo_angle[6] = {0,0,0,0,0,0};
+int servo_angle[6] = {PI/2,PI/4,PI * 3/4,PI/2,PI * 3/4,PI/4};
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3];
@@ -168,16 +168,19 @@ void writeToServos() {
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
-    Serial.println((int)alpha * 1000);
     alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
-    Serial.println((int)alpha * 1000);
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    Serial.println((int)alpha * 1000);
+    Serial.print("e: ");
+    Serial.print(e);
+    Serial.print(", f: ");
+    Serial.print(f);
+    Serial.print(", g: ");
+    Serial.print(g);
+    Serial.print(", alpha: ");
+    Serial.println((int)alpha);
     constrain(alpha, servo_min[i], servo_max[i]);
-    servo_angle[i] = alpha;
 
     Serial.println((int)alpha * 1000);
-    alpha = 175;
     servos[i].write((int)alpha);
   }
 }
@@ -197,13 +200,13 @@ void setup()
 
   Serial.begin(9600);
   Serial.println("START");
-  for(int i = 0; i < 6; ++i) {
-    servos[i].write(servo_min[i]);
-    delay(1000);
-  }
+//  for(int i = 0; i < 6; ++i) {
+//    servos[i].write(servo_min[i]);
+//    delay(1000);
+//  }
   delay(2500);
   
-  initDistanceToLegsFromOrigin();
+//  initDistanceToLegsFromOrigin();
 }
 
 void loop()
