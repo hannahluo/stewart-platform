@@ -164,6 +164,15 @@ void writeToServos() {
   float legLength, legX, legY, legZ;
   float alpha;
   for(int i = 0; i < NUM_LEGS; ++i) {
+    Serial.print("LEG VECTOR ");
+    Serial.print(i);
+    Serial.print(": [");
+    Serial.print(LegVectors[i][X]);
+    Serial.print(", ");
+    Serial.print(LegVectors[i][Y]);
+    Serial.print(", ");
+    Serial.print(LegVectors[i][Z]);
+    Serial.println("]");
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
