@@ -47,7 +47,7 @@ int servo_max[6] = {135,135,180,175,135,175};
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
 // DO THIS FOR EACH SERVO AND RECORD THE RESULTS IN THE ARRAY BELOW THANKS
-int servo_angle[6] = {PI/2,PI/4,PI * 3/4,PI/2,PI * 3/4,PI/4};
+int servo_angle[6] = {0,-2*PI/3,-2*PI/3,-PI/3,-PI/3,0};
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3];
@@ -262,4 +262,3 @@ void loop()
     Serial.println(digitalRead(JOY_BTN_PIN));
   }
 }
-
