@@ -58,7 +58,7 @@ float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
-float MaxYaw = atan2(ROD_LENGTH + 2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
+float MaxYaw = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
   
 void initDistanceToLegsFromOrigin()
 {
