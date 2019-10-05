@@ -67,17 +67,6 @@ float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
 float MaxYaw = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
-  
-void initDistanceToLegsFromOrigin()
-{
-  for(int i = 0; i < NUM_LEGS; ++i)
-    {
-      float angle = ( PI / 3 ) * i;
-      DistanceToLegsFromOrigin[i][X] = DISTANCE_TO_LEG * cos(angle);
-      DistanceToLegsFromOrigin[i][Y] = DISTANCE_TO_LEG * sin(angle);
-      DistanceToLegsFromOrigin[i][Z] = 0;
-  }
-}
 
 float getLengthOfVector3(const float vector[3])
 {
@@ -222,8 +211,6 @@ void setup()
     delay(1000);
   }
   delay(2500);
-  
-  initDistanceToLegsFromOrigin();
 }
 
 void loop()
