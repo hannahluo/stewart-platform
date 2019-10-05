@@ -50,7 +50,15 @@ int servo_max[6] = {135,135,180,175,135,175};
 int servo_angle[6] = {0,-2*PI/3,-2*PI/3,-PI/3,-PI/3,0};
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
-float DistanceToLegsFromOrigin[NUM_LEGS][3];
+float DistanceToLegsFromOrigin[NUM_LEGS][3] =
+{
+  {3.327,6.467,0},
+  {7.265,-0.350,0},
+  {3.935,-6.117,0},
+  {-3.935,-6.117,0},
+  {-7.265,-0.350,0},
+  {-3.327,6.467,0}
+};
 float RotationMatrix[3][3];
 float T[3];
 float P[3];
