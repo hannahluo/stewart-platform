@@ -13,9 +13,9 @@
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
 
-#define DEAD_ZONE_MIN 410
-#define DEAD_ZONE_MAX 614
-#define MAX_INPUT 1023
+#define DEAD_ZONE_MIN 350
+#define DEAD_ZONE_MAX 450
+#define MAX_INPUT 800
 #define MIN_INPUT 0
 #define MAX_CONVERTED_INPUT 50
 #define MIN_CONVERTED_INPUT -50

@@ -1,7 +1,3 @@
-#define DEAD_ZONE_MIN 485
-#define DEAD_ZONE_MAX 530
-
-
 // Calculate the z angle from the z-axis to the T line
 double calc_z_angle_val(int x, int y)
 {
