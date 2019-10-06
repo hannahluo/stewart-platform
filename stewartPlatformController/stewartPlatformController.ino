@@ -34,7 +34,7 @@
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-#define PLATFORM_LENGTH 17
+#define PLATFORM_LENGTH 11.23
 Servo servo_0;
 Servo servo_1;
 Servo servo_2;
@@ -42,8 +42,9 @@ Servo servo_3;
 Servo servo_4;
 Servo servo_5;
 
-int servo_min[6] = {0,0,0,0,0,0};
-int servo_max[6] = {135,135,180,175,135,175};
+int servo_min[6] = {135,0,180,0,135,0};
+//int servo_max[6] = {135,135,180,175,135,175};
+int servo_max[6] = {0,135,0,175,0,175};
 // WE NEED TO MEASURE THESE OKAY PLEASE MEASURE THEM BEFORE U TRY TO RUN THE CODE SOMEONE!!
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
@@ -63,7 +64,14 @@ float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 float RotationMatrix[3][3];
 float T[3];
 float P[3];
-float LegVectors[NUM_LEGS][3];
+float LegVectors[NUM_LEGS][3] = {
+      { 0, 0, 11},
+      { 0, 0, 10},
+      { 0, 0, 11},
+      { 0, 0, 12},
+      { 0, 0, 13},
+      { 0, 0, 12}
+    };
 float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
@@ -95,10 +103,9 @@ void fillRotationMatrix(float roll, float pitch, float yaw)
 
 void computeTVector(float roll, float pitch, float yaw)
 {
-    T[Z] = HEIGHT * cos(yaw);
-    float xyLength = HEIGHT * sin(yaw);
-    T[Y] = xyLength * sin(roll);
-    T[X] = xyLength * cos(roll);
+    T[Z] = HEIGHT;
+    T[Y] = 0;
+    T[X] = 0;
 }
 
 void computeResultantRotatedPVectorForLeg(int i)
@@ -113,6 +120,13 @@ void computeVectorForLeg(int i)
   LegVectors[i][X] = T[X] + P[X] - DistanceToLegsFromOrigin[i][X];
   LegVectors[i][Y] = T[Y] + P[Y] - DistanceToLegsFromOrigin[i][Y];
   LegVectors[i][Z] = T[Z] + P[Z] - DistanceToLegsFromOrigin[i][Z];
+
+  
+  /*float len = sqrt(pow(LegVectors[i][X],2) + pow(LegVectors[i][Y],2) + pow(LegVectors[i][Z],2)); 
+  for(int j = 0; j < 3;++j)
+  {
+    LegVectors[i][j] = LegVectors[i][j] * ROD_LENGTH / len;
+  }*/
 }
 
 // Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
@@ -162,19 +176,18 @@ void getAngles(int x, int y, float& pitch, float& yaw)
   float z = HEIGHT - (min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ);
 
   // As roll is assumed to be zero we start with pitch - about y
-  // The vector of x y is already known, and we can get the angle from (x, 0, 0) to (x, y, z) to get pitch rotation
-  pitch = atan2(z, y);
+  // The vector of x y is already known, and we can get the angle from (0, y, 0) to (x, y, z) to get pitch rotation
+  pitch = atan2(z, x);
 
   // The length of this vector is also equal to the length of the vector that is rotated onto the x-y plane
   // call it len because L(l) looks identical to one(1)
-  float len = sqrt(pow(z,2) + pow(y,2));
+  float len = sqrt(pow(z,2) + pow(x,2));
 
-  // The x coordinate remains the same when we rotate about the y - axis --> We have the rotated x and l now, we can get the angle
+  // The y coordinate remains the same when we rotate about the y - axis --> We have the rotated x and y now, we can get the angle
   // If y was positive before then the projected angle will be in the +x+y plane, else it'll be in the +x-y plane
   // We adjust the angle for yaw based on that
-  yaw = sign(y) * acos(x / len);
+  yaw = atan2(y,len) ;
 }
-
 void writeToServos() {
   float e, f, g;
   float legLength, legX, legY, legZ;
@@ -194,8 +207,15 @@ void writeToServos() {
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
-    alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
-    alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
+    Serial.print("asin input: ");
+    Serial.println((g/sqrt(e*e + f*f)));
+    float asinNum;
+    if( abs(g) > sqrt(e*e + f*f)) asinNum = sign(g) * PI/2;
+    else asinNum = asin(g/sqrt(e*e + f*f));
+    alpha = (asinNum - atan2(f, e))*180/PI;
+    Serial.print("pre linaear alpha ");
+    Serial.println(alpha);
+    // alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
     
     Serial.print("e: ");
     Serial.print(e);
@@ -205,10 +225,23 @@ void writeToServos() {
     Serial.print(g);
     Serial.print(", alpha: ");
     Serial.println((int)alpha);
-    int servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
+    int servoPos;
+//    if (i == 1) 
+//      servoPos = constrain(90 + (int)alpha, servo_min[i], servo_max[i]);
+//    else
+//      servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
+    if (i % 2) {
+      alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
+      servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
+    }
+    else { // 1 3 5 go backwards
+      alpha = (servo_min[i] - servo_max[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_max[i];
+      servoPos = constrain(90 + (int)alpha, servo_max[i], servo_min[i]);
+    }
 
     Serial.println(servoPos);
     servos[i].write(servoPos);
+    
   }
 }
 
@@ -231,8 +264,11 @@ void setup()
   Serial.begin(9600);
   Serial.println("START");
   for(int i = 0; i < 6; ++i) {
-    servos[i].write(servo_min[i]);
+    servos[i].write(0);
     delay(1000);
+    servos[i].write(90);
+    delay(1000);
+
   }
   delay(2500);
   digitalWrite(LED_PIN, LOW);
@@ -267,11 +303,11 @@ void loop()
     getAngles(x_new, y_new, pitch, yaw);
 
     Serial.print("Yaw: ");
-    Serial.println(yaw);
+    Serial.println(yaw * 180 / PI);
     Serial.print("Pitch: ");
-    Serial.println(pitch);
+    Serial.println(pitch * 180 / PI);
 
-    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+    //calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(1000);
   }
