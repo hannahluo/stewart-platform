@@ -1,10 +1,11 @@
-
+    
 #include <Servo.h>
 #include <math.h>
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
 #define JOY_BTN_PIN 52
+#define LED_PIN 13
 
 #define SERVO_0_PIN 2
 #define SERVO_1_PIN 3
@@ -13,9 +14,9 @@
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
 
-#define DEAD_ZONE_MIN 350
-#define DEAD_ZONE_MAX 450
-#define MAX_INPUT 800
+#define DEAD_ZONE_MIN 485
+#define DEAD_ZONE_MAX 530
+#define MAX_INPUT 1023
 #define MIN_INPUT 0
 #define MAX_CONVERTED_INPUT 50
 #define MIN_CONVERTED_INPUT -50
@@ -28,7 +29,7 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 10
+#define HEIGHT 10.8
 #define DISTANCE_TO_LEG 7.1
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
@@ -47,7 +48,7 @@ int servo_max[6] = {135,135,180,175,135,175};
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
 // DO THIS FOR EACH SERVO AND RECORD THE RESULTS IN THE ARRAY BELOW THANKS
-int servo_angle[6] = {0,-2*PI/3,-2*PI/3,-PI/3,-PI/3,0};
+float servo_angle[6] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
 Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3] =
@@ -188,12 +189,14 @@ void writeToServos() {
     Serial.print(", ");
     Serial.print(LegVectors[i][Z]);
     Serial.println("]");
+    
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
     alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
     alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
+    
     Serial.print("e: ");
     Serial.print(e);
     Serial.print(", f: ");
@@ -202,15 +205,18 @@ void writeToServos() {
     Serial.print(g);
     Serial.print(", alpha: ");
     Serial.println((int)alpha);
-    constrain(alpha, servo_min[i], servo_max[i]);
+    int servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
 
-    Serial.println(90 - (int)alpha);
-    servos[i].write(90 - (int)alpha);
+    Serial.println(servoPos);
+    servos[i].write(servoPos);
   }
 }
 
 void setup()
 {
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);    
+
   servo_0.attach(SERVO_0_PIN);
   servo_1.attach(SERVO_1_PIN);
   servo_2.attach(SERVO_2_PIN);
@@ -229,6 +235,8 @@ void setup()
     delay(1000);
   }
   delay(2500);
+  digitalWrite(LED_PIN, LOW);
+
 }
 
 void loop()
@@ -239,7 +247,7 @@ void loop()
   float surgeAngle = 0;
   float swayAngle = 0;
   float heaveAngle = 0;
-  
+
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
     int x = analogRead(JOY_X_PIN);
     int y = analogRead(JOY_Y_PIN);
@@ -263,14 +271,14 @@ void loop()
     Serial.print("Pitch: ");
     Serial.println(pitch);
 
-    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
-    delay(500);
+    delay(1000);
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
     delay(100);
-    Serial.println("Button pushed");
+    // // Serial.println("Button pushed");
     Serial.println(digitalRead(JOY_BTN_PIN));
   }
 }
