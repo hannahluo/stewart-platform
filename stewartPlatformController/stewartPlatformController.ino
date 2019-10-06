@@ -66,11 +66,17 @@ float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
-float MaxYaw = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
+float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
+float DeltaInputZ = HEIGHT * ( 1.0 - cos(MaxTilt));
 
 float getLengthOfVector3(const float vector[3])
 {
   return sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+}
+
+int sign(float x)
+{
+  return ((x>0)-(x<0));
 }
 
 void fillRotationMatrix(float roll, float pitch, float yaw)
@@ -145,15 +151,27 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
     }
 }
 
-float getYaw(int x, int y)
+void getAngles(int x, int y, float& pitch, float& yaw)
 {
-  float xy = sqrt(pow(x,2) + pow(y,2));
-  return min(xy / MaxInputL, 1.0) * MaxYaw;
-}
+  // Calculate a z for the vector defining the rotation - The lower the z the more tilted the platform
+  // First maps the intensity of the joystick angle to a fraction of the change in height
+  // At its lowest the fraction will be 0 and the height equal to base Height
+  // At its highest the fraction will be 1.0 and the height will be lowered by DeltaInputZ
+  // All values in between are approximately linearized 
+  float z = HEIGHT - (min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ);
 
-float getRoll(int x, int y)
-{
-  return atan2(y,x);
+  // As roll is assumed to be zero we start with pitch - about y
+  // The vector of x y is already known, and we can get the angle from (x, 0, 0) to (x, y, z) to get pitch rotation
+  pitch = atan2(z, y);
+
+  // The length of this vector is also equal to the length of the vector that is rotated onto the x-y plane
+  // call it len because L(l) looks identical to one(1)
+  float len = sqrt(pow(z,2) + pow(y,2));
+
+  // The x coordinate remains the same when we rotate about the y - axis --> We have the rotated x and l now, we can get the angle
+  // If y was positive before then the projected angle will be in the +x+y plane, else it'll be in the +x-y plane
+  // We adjust the angle for yaw based on that
+  yaw = sign(y) * acos(x / len);
 }
 
 void writeToServos() {
@@ -238,13 +256,12 @@ void loop()
     Serial.print("Y CONVERTED: ");
     Serial.println(y_new);
 
-    yaw = getYaw(x_new, y_new);
-    roll = getRoll(x_new, y_new);
+    getAngles(x_new, y_new, pitch, yaw);
 
-    Serial.print("YAW: ");
+    Serial.print("Yaw: ");
     Serial.println(yaw);
-    Serial.print("ROLL: ");
-    Serial.println(roll);
+    Serial.print("Pitch: ");
+    Serial.println(pitch);
 
     calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
