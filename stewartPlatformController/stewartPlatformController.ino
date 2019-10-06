@@ -264,16 +264,18 @@ void loop()
     Serial.print("Y CONVERTED: ");
     Serial.println(y_new);
 
-    getAngles(x_new, y_new, pitch, yaw);
+    setDirections(x_new, y_new);
 
-    Serial.print("Yaw: ");
-    Serial.println(yaw);
-    Serial.print("Pitch: ");
-    Serial.println(pitch);
-
-    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
-    writeToServos();
-    delay(1000);
+//    getAngles(x_new, y_new, pitch, yaw);
+//
+//    Serial.print("Yaw: ");
+//    Serial.println(yaw);
+//    Serial.print("Pitch: ");
+//    Serial.println(pitch);
+//
+//    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+//    writeToServos();
+//    delay(1000);
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
