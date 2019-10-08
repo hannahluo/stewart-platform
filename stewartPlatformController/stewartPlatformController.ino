@@ -2,6 +2,8 @@
 #include <Servo.h>
 #include <math.h>
 
+#define PRINT_DEBUG
+
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
 #define JOY_BTN_PIN 52
@@ -64,18 +66,11 @@ float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 float RotationMatrix[3][3];
 float T[3];
 float P[3];
-float LegVectors[NUM_LEGS][3] = {
-      { 0, 0, 11},
-      { 0, 0, 10},
-      { 0, 0, 11},
-      { 0, 0, 12},
-      { 0, 0, 13},
-      { 0, 0, 12}
-    };
+float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
 
 float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
-float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
+float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH);
 float DeltaInputZ = HEIGHT * ( 1.0 - cos(MaxTilt));
 
 float getLengthOfVector3(const float vector[3])
@@ -121,12 +116,36 @@ void computeVectorForLeg(int i)
   LegVectors[i][Y] = T[Y] + P[Y] - DistanceToLegsFromOrigin[i][Y];
   LegVectors[i][Z] = T[Z] + P[Z] - DistanceToLegsFromOrigin[i][Z];
 
-  
-  /*float len = sqrt(pow(LegVectors[i][X],2) + pow(LegVectors[i][Y],2) + pow(LegVectors[i][Z],2)); 
-  for(int j = 0; j < 3;++j)
-  {
-    LegVectors[i][j] = LegVectors[i][j] * ROD_LENGTH / len;
-  }*/
+#ifdef PRINT_DEBUG
+  Serial.print("LEG VECTOR ");
+  Serial.print(i);
+  Serial.print(": [");
+  Serial.print(LegVectors[i][X]);
+  Serial.print(", ");
+  Serial.print(LegVectors[i][Y]);
+  Serial.print(", ");
+  Serial.print(LegVectors[i][Z]);
+  Serial.println("] =");
+  Serial.print("P VECTOR   ");
+  Serial.print(i);
+  Serial.print(": [");
+  Serial.print(P[X]);
+  Serial.print(", ");
+  Serial.print(P[Y]);
+  Serial.print(", ");
+  Serial.print(P[Z]);
+  Serial.println("] -");
+  Serial.print("LEGS2OG    ");
+  Serial.print(i);
+  Serial.print(": [");
+  Serial.print(DistanceToLegsFromOrigin[i][X]);
+  Serial.print(", ");
+  Serial.print(DistanceToLegsFromOrigin[i][Y]);
+  Serial.print(", ");
+  Serial.print(DistanceToLegsFromOrigin[i][Z]);
+  Serial.println("]");
+  Serial.println();
+#endif
 }
 
 // Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
@@ -166,57 +185,43 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
     }
 }
 
-void getAngles(int x, int y, float& pitch, float& yaw)
+void getAngles(int x, int y, float& roll, float& pitch)
 {
   // Calculate a z for the vector defining the rotation - The lower the z the more tilted the platform
   // First maps the intensity of the joystick angle to a fraction of the change in height
   // At its lowest the fraction will be 0 and the height equal to base Height
   // At its highest the fraction will be 1.0 and the height will be lowered by DeltaInputZ
   // All values in between are approximately linearized 
-  float z = HEIGHT - (min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ);
-
-  // As roll is assumed to be zero we start with pitch - about y
-  // The vector of x y is already known, and we can get the angle from (0, y, 0) to (x, y, z) to get pitch rotation
-  pitch = atan2(z, x);
-
-  // The length of this vector is also equal to the length of the vector that is rotated onto the x-y plane
-  // call it len because L(l) looks identical to one(1)
-  float len = sqrt(pow(z,2) + pow(x,2));
-
-  // The y coordinate remains the same when we rotate about the y - axis --> We have the rotated x and y now, we can get the angle
-  // If y was positive before then the projected angle will be in the +x+y plane, else it'll be in the +x-y plane
-  // We adjust the angle for yaw based on that
-  yaw = atan2(y,len) ;
+  float zv = HEIGHT - min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ;
+  float xv = x *1.0 / MAX_CONVERTED_INPUT;
+  float yv = y *1.0 / MAX_CONVERTED_INPUT;
+  roll = atan2(yv, zv);
+  float len = sqrt(pow(zv,2) + pow(yv,2));
+  pitch = atan2(xv,len) ;
 }
 void writeToServos() {
   float e, f, g;
   float legLength, legX, legY, legZ;
   float alpha;
   for(int i = 0; i < NUM_LEGS; ++i) {
-    Serial.print("LEG VECTOR ");
-    Serial.print(i);
-    Serial.print(": [");
-    Serial.print(LegVectors[i][X]);
-    Serial.print(", ");
-    Serial.print(LegVectors[i][Y]);
-    Serial.print(", ");
-    Serial.print(LegVectors[i][Z]);
-    Serial.println("]");
-    
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
     g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
+    
+#ifdef PRINT_DEBUG
     Serial.print("asin input: ");
     Serial.println((g/sqrt(e*e + f*f)));
+#endif
+
     float asinNum;
     if( abs(g) > sqrt(e*e + f*f)) asinNum = sign(g) * PI/2;
     else asinNum = asin(g/sqrt(e*e + f*f));
     alpha = (asinNum - atan2(f, e))*180/PI;
+    
+#ifdef PRINT_DEBUG
     Serial.print("pre linaear alpha ");
     Serial.println(alpha);
-    // alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    
     Serial.print("e: ");
     Serial.print(e);
     Serial.print(", f: ");
@@ -225,6 +230,9 @@ void writeToServos() {
     Serial.print(g);
     Serial.print(", alpha: ");
     Serial.println((int)alpha);
+#endif
+    // alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
+    
     int servoPos;
 //    if (i == 1) 
 //      servoPos = constrain(90 + (int)alpha, servo_min[i], servo_max[i]);
@@ -239,7 +247,10 @@ void writeToServos() {
       servoPos = constrain(90 + (int)alpha, servo_max[i], servo_min[i]);
     }
 
+#ifdef PRINT_DEBUG
     Serial.println(servoPos);
+#endif
+
     servos[i].write(servoPos);
     
   }
@@ -263,6 +274,13 @@ void setup()
 
   Serial.begin(9600);
   Serial.println("START");
+
+#ifdef PRINT_DEBUG
+  Serial.println("Print Debugging Enabled");
+#else
+  Serial.println("Print Debugging Disabled");
+#endif
+
   for(int i = 0; i < 6; ++i) {
     servos[i].write(0);
     delay(1000);
@@ -272,7 +290,6 @@ void setup()
   }
   delay(2500);
   digitalWrite(LED_PIN, LOW);
-
 }
 
 void loop()
@@ -290,6 +307,7 @@ void loop()
     int x_new = convert_xy_value(x);
     int y_new = convert_xy_value(y);
 
+#ifdef PRINT_DEBUG
     Serial.println("--------------");
     Serial.print("X: ");
     Serial.println(x);
@@ -299,15 +317,18 @@ void loop()
     Serial.println(x_new);
     Serial.print("Y CONVERTED: ");
     Serial.println(y_new);
+#endif
 
-    getAngles(x_new, y_new, pitch, yaw);
+    getAngles(x_new, y_new, roll, pitch);
 
-    Serial.print("Yaw: ");
-    Serial.println(yaw * 180 / PI);
+#ifdef PRINT_DEBUG
+    Serial.print("Roll: ");
+    Serial.println(roll * 180 / PI);
     Serial.print("Pitch: ");
     Serial.println(pitch * 180 / PI);
+#endif
 
-    //calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
     delay(1000);
   }
