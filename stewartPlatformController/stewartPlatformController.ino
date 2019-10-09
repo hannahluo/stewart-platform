@@ -2,7 +2,7 @@
 #include <Servo.h>
 #include <math.h>
 
-#define PRINT_DEBUG
+// #define PRINT_DEBUG
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
@@ -47,6 +47,7 @@ Servo servo_5;
 int servo_min[6] = {135,0,180,0,135,0};
 //int servo_max[6] = {135,135,180,175,135,175};
 int servo_max[6] = {0,135,0,175,0,175};
+float rod_length[6] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
 // WE NEED TO MEASURE THESE OKAY PLEASE MEASURE THEM BEFORE U TRY TO RUN THE CODE SOMEONE!!
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
@@ -207,7 +208,7 @@ void writeToServos() {
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
-    g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
+    g = legLength*legLength - (rod_length[i]*rod_length[i] - HORN_LENGTH*HORN_LENGTH);
     
 #ifdef PRINT_DEBUG
     Serial.print("asin input: ");
@@ -282,9 +283,9 @@ void setup()
 #endif
 
   for(int i = 0; i < 6; ++i) {
-    servos[i].write(0);
+    servos[i].write(servo_min[i]);
     delay(1000);
-    servos[i].write(90);
+    servos[i].write((servo_max[i]+servo_min[i])/2);
     delay(1000);
 
   }
@@ -330,7 +331,7 @@ void loop()
 
     calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
-    delay(1000);
+    delay(75);
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
