@@ -36,7 +36,7 @@
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-#define PLATFORM_LENGTH 11.23
+#define PLATFORM_LENGTH 10
 Servo servo_0;
 Servo servo_1;
 Servo servo_2;
