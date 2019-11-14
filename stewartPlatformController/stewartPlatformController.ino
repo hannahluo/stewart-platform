@@ -1,11 +1,10 @@
     
 #include <Servo.h>
 #include <math.h>
+#include <Wire.h>
 
 // #define PRINT_DEBUG
 
-#define JOY_X_PIN A0
-#define JOY_Y_PIN A1
 #define JOY_BTN_PIN 52
 #define LED_PIN 13
 
@@ -15,13 +14,6 @@
 #define SERVO_3_PIN 5
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
-
-#define DEAD_ZONE_MIN 485
-#define DEAD_ZONE_MAX 530
-#define MAX_INPUT 1023
-#define MIN_INPUT 0
-#define MAX_CONVERTED_INPUT 50
-#define MIN_CONVERTED_INPUT -50
 
 #define PRESSED 0
 
@@ -69,10 +61,6 @@ float T[3];
 float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
-
-float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
-float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH);
-float DeltaInputZ = HEIGHT * ( 1.0 - cos(MaxTilt));
 
 float getLengthOfVector3(const float vector[3])
 {
@@ -185,21 +173,6 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
       computeVectorForLeg(i);
     }
 }
-
-void getAngles(int x, int y, float& roll, float& pitch)
-{
-  // Calculate a z for the vector defining the rotation - The lower the z the more tilted the platform
-  // First maps the intensity of the joystick angle to a fraction of the change in height
-  // At its lowest the fraction will be 0 and the height equal to base Height
-  // At its highest the fraction will be 1.0 and the height will be lowered by DeltaInputZ
-  // All values in between are approximately linearized 
-  float zv = HEIGHT - min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ;
-  float xv = x *1.0 / MAX_CONVERTED_INPUT;
-  float yv = y *1.0 / MAX_CONVERTED_INPUT;
-  roll = atan2(yv, zv);
-  float len = sqrt(pow(zv,2) + pow(yv,2));
-  pitch = atan2(xv,len) ;
-}
 void writeToServos() {
   float e, f, g;
   float legLength, legX, legY, legZ;
@@ -268,9 +241,7 @@ void setup()
   servo_3.attach(SERVO_3_PIN);
   servo_4.attach(SERVO_4_PIN);
   servo_5.attach(SERVO_5_PIN);
-
-  pinMode(JOY_X_PIN, INPUT);
-  pinMode(JOY_Y_PIN, INPUT);
+  
   pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
 
   Serial.begin(9600);
@@ -303,24 +274,6 @@ void loop()
   float heaveAngle = 0;
 
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
-    int x = analogRead(JOY_X_PIN);
-    int y = analogRead(JOY_Y_PIN);
-    int x_new = convert_xy_value(x);
-    int y_new = convert_xy_value(y);
-
-#ifdef PRINT_DEBUG
-    Serial.println("--------------");
-    Serial.print("X: ");
-    Serial.println(x);
-    Serial.print("Y: ");
-    Serial.println(y);
-    Serial.print("X CONVERTED: ");
-    Serial.println(x_new);
-    Serial.print("Y CONVERTED: ");
-    Serial.println(y_new);
-#endif
-
-    getAngles(x_new, y_new, roll, pitch);
 
 #ifdef PRINT_DEBUG
     Serial.print("Roll: ");
@@ -336,7 +289,8 @@ void loop()
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
     delay(100);
-    // // Serial.println("Button pushed");
-    Serial.println(digitalRead(JOY_BTN_PIN));
+#ifdef PRINT_DEBUG
+    Serial.println("Stopped");
+#endif
   }
 }
