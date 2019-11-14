@@ -1,5 +1,8 @@
 #include <Wire.h>
 
+// to do: design and implement regression algo
+// take running average of mean 90% of data ?
+
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
 
