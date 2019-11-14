@@ -1,10 +1,9 @@
     
 #include <Servo.h>
 #include <math.h>
-#include <Wire.h>
 
-// #define PRINT_DEBUG
-
+#define JOY_X_PIN A0
+#define JOY_Y_PIN A1
 #define JOY_BTN_PIN 52
 #define LED_PIN 13
 
@@ -14,6 +13,13 @@
 #define SERVO_3_PIN 5
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
+
+#define DEAD_ZONE_MIN 485
+#define DEAD_ZONE_MAX 530
+#define MAX_INPUT 1023
+#define MIN_INPUT 0
+#define MAX_CONVERTED_INPUT 50
+#define MIN_CONVERTED_INPUT -50
 
 #define PRESSED 0
 
@@ -28,7 +34,7 @@
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-#define PLATFORM_LENGTH 10
+#define PLATFORM_LENGTH 17
 Servo servo_0;
 Servo servo_1;
 Servo servo_2;
@@ -36,10 +42,8 @@ Servo servo_3;
 Servo servo_4;
 Servo servo_5;
 
-int servo_min[6] = {135,0,180,0,135,0};
-//int servo_max[6] = {135,135,180,175,135,175};
-int servo_max[6] = {0,135,0,175,0,175};
-float rod_length[6] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
+int servo_min[6] = {0,0,0,0,0,0};
+int servo_max[6] = {135,135,180,175,135,175};
 // WE NEED TO MEASURE THESE OKAY PLEASE MEASURE THEM BEFORE U TRY TO RUN THE CODE SOMEONE!!
 // https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
 // IT'S THE ANGLE BETA FOUND HERE
@@ -61,6 +65,10 @@ float T[3];
 float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
+
+float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
+float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH) * 0.75; //x0.75 to be safe
+float DeltaInputZ = HEIGHT * ( 1.0 - cos(MaxTilt));
 
 float getLengthOfVector3(const float vector[3])
 {
@@ -87,9 +95,10 @@ void fillRotationMatrix(float roll, float pitch, float yaw)
 
 void computeTVector(float roll, float pitch, float yaw)
 {
-    T[Z] = HEIGHT;
-    T[Y] = 0;
-    T[X] = 0;
+    T[Z] = HEIGHT * cos(yaw);
+    float xyLength = HEIGHT * sin(yaw);
+    T[Y] = xyLength * sin(roll);
+    T[X] = xyLength * cos(roll);
 }
 
 void computeResultantRotatedPVectorForLeg(int i)
@@ -104,37 +113,6 @@ void computeVectorForLeg(int i)
   LegVectors[i][X] = T[X] + P[X] - DistanceToLegsFromOrigin[i][X];
   LegVectors[i][Y] = T[Y] + P[Y] - DistanceToLegsFromOrigin[i][Y];
   LegVectors[i][Z] = T[Z] + P[Z] - DistanceToLegsFromOrigin[i][Z];
-
-#ifdef PRINT_DEBUG
-  Serial.print("LEG VECTOR ");
-  Serial.print(i);
-  Serial.print(": [");
-  Serial.print(LegVectors[i][X]);
-  Serial.print(", ");
-  Serial.print(LegVectors[i][Y]);
-  Serial.print(", ");
-  Serial.print(LegVectors[i][Z]);
-  Serial.println("] =");
-  Serial.print("P VECTOR   ");
-  Serial.print(i);
-  Serial.print(": [");
-  Serial.print(P[X]);
-  Serial.print(", ");
-  Serial.print(P[Y]);
-  Serial.print(", ");
-  Serial.print(P[Z]);
-  Serial.println("] -");
-  Serial.print("LEGS2OG    ");
-  Serial.print(i);
-  Serial.print(": [");
-  Serial.print(DistanceToLegsFromOrigin[i][X]);
-  Serial.print(", ");
-  Serial.print(DistanceToLegsFromOrigin[i][Y]);
-  Serial.print(", ");
-  Serial.print(DistanceToLegsFromOrigin[i][Z]);
-  Serial.println("]");
-  Serial.println();
-#endif
 }
 
 // Returns a float from 0.0 - 1.0, representing the fraction of the current height that the leg is
@@ -173,29 +151,52 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
       computeVectorForLeg(i);
     }
 }
+
+void getAngles(int x, int y, float& pitch, float& yaw)
+{
+  // Calculate a z for the vector defining the rotation - The lower the z the more tilted the platform
+  // First maps the intensity of the joystick angle to a fraction of the change in height
+  // At its lowest the fraction will be 0 and the height equal to base Height
+  // At its highest the fraction will be 1.0 and the height will be lowered by DeltaInputZ
+  // All values in between are approximately linearized 
+  float z = HEIGHT - (min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ);
+
+  // As roll is assumed to be zero we start with pitch - about y
+  // The vector of x y is already known, and we can get the angle from (x, 0, 0) to (x, y, z) to get pitch rotation
+  pitch = atan2(z, y);
+
+  // The length of this vector is also equal to the length of the vector that is rotated onto the x-y plane
+  // call it len because L(l) looks identical to one(1)
+  float len = sqrt(pow(z,2) + pow(y,2));
+
+  // The x coordinate remains the same when we rotate about the y - axis --> We have the rotated x and l now, we can get the angle
+  // If y was positive before then the projected angle will be in the +x+y plane, else it'll be in the +x-y plane
+  // We adjust the angle for yaw based on that
+  yaw = sign(y) * acos(x / len);
+}
+
 void writeToServos() {
   float e, f, g;
   float legLength, legX, legY, legZ;
   float alpha;
   for(int i = 0; i < NUM_LEGS; ++i) {
+    Serial.print("LEG VECTOR ");
+    Serial.print(i);
+    Serial.print(": [");
+    Serial.print(LegVectors[i][X]);
+    Serial.print(", ");
+    Serial.print(LegVectors[i][Y]);
+    Serial.print(", ");
+    Serial.print(LegVectors[i][Z]);
+    Serial.println("]");
+    
     legLength = sqrt(LegVectors[i][X]*LegVectors[i][X] + LegVectors[i][Y]*LegVectors[i][Y] + LegVectors[i][Z]*LegVectors[i][Z]);
     e = 2*HORN_LENGTH*abs(LegVectors[i][Z]);
     f = 2*HORN_LENGTH*(LegVectors[i][X]*cos(servo_angle[i]) + LegVectors[i][Y]*sin(servo_angle[i]));
-    g = legLength*legLength - (rod_length[i]*rod_length[i] - HORN_LENGTH*HORN_LENGTH);
+    g = legLength*legLength - (ROD_LENGTH*ROD_LENGTH - HORN_LENGTH*HORN_LENGTH);
+    alpha = (asin(g/sqrt(e*e + f*f)) - atan2(f, e))*180/PI;
+    alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
     
-#ifdef PRINT_DEBUG
-    Serial.print("asin input: ");
-    Serial.println((g/sqrt(e*e + f*f)));
-#endif
-
-    float asinNum;
-    if( abs(g) > sqrt(e*e + f*f)) asinNum = sign(g) * PI/2;
-    else asinNum = asin(g/sqrt(e*e + f*f));
-    alpha = (asinNum - atan2(f, e))*180/PI;
-    
-#ifdef PRINT_DEBUG
-    Serial.print("pre linaear alpha ");
-    Serial.println(alpha);
     Serial.print("e: ");
     Serial.print(e);
     Serial.print(", f: ");
@@ -204,34 +205,17 @@ void writeToServos() {
     Serial.print(g);
     Serial.print(", alpha: ");
     Serial.println((int)alpha);
-#endif
-    // alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    
-    int servoPos;
-//    if (i == 1) 
-//      servoPos = constrain(90 + (int)alpha, servo_min[i], servo_max[i]);
-//    else
-//      servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
-    if (i % 2) {
-      alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-      servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
-    }
-    else { // 1 3 5 go backwards
-      alpha = (servo_min[i] - servo_max[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_max[i];
-      servoPos = constrain(90 + (int)alpha, servo_max[i], servo_min[i]);
-    }
+    int servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
 
-#ifdef PRINT_DEBUG
     Serial.println(servoPos);
-#endif
-
     servos[i].write(servoPos);
-    
   }
 }
 
 void setup()
 {
+  Wire.begin();
+  
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);    
 
@@ -241,24 +225,36 @@ void setup()
   servo_3.attach(SERVO_3_PIN);
   servo_4.attach(SERVO_4_PIN);
   servo_5.attach(SERVO_5_PIN);
-  
+
+  pinMode(JOY_X_PIN, INPUT);
+  pinMode(JOY_Y_PIN, INPUT);
   pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
 
+  setupMPU();
+  // get flat platform values                                        
+  for (int i = 0; i < MPU_SAMPLE_SIZE; ++i){                  
+    readMPU();
+    //Add the gyro x offset to the gyro_x_cal variable                                            
+    gyro_x_cal += gyro_x;
+    //Add the gyro y offset to the gyro_y_cal variable                                              
+    gyro_y_cal += gyro_y; 
+    //Add the gyro z offset to the gyro_z_cal variable                                             
+    gyro_z_cal += gyro_z; 
+    //Delay 3us to have 250Hz for-loop                                             
+    delay(3);                                                          
+  }
+ 
+  gyro_x_cal /= MPU_SAMPLE_SIZE;                                                 
+  gyro_y_cal /= MPU_SAMPLE_SIZE;                                                 
+  gyro_z_cal /= MPU_SAMPLE_SIZE;
+
+  loop_timer = micros(); 
+  
   Serial.begin(9600);
   Serial.println("START");
-
-#ifdef PRINT_DEBUG
-  Serial.println("Print Debugging Enabled");
-#else
-  Serial.println("Print Debugging Disabled");
-#endif
-
   for(int i = 0; i < 6; ++i) {
     servos[i].write(servo_min[i]);
     delay(1000);
-    servos[i].write((servo_max[i]+servo_min[i])/2);
-    delay(1000);
-
   }
   delay(2500);
   digitalWrite(LED_PIN, LOW);
@@ -274,23 +270,36 @@ void loop()
   float heaveAngle = 0;
 
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
+    int x = analogRead(JOY_X_PIN);
+    int y = analogRead(JOY_Y_PIN);
+    int x_new = convert_xy_value(x);
+    int y_new = convert_xy_value(y);
 
-#ifdef PRINT_DEBUG
-    Serial.print("Roll: ");
-    Serial.println(roll * 180 / PI);
+    Serial.println("--------------");
+    Serial.print("X: ");
+    Serial.println(x);
+    Serial.print("Y: ");
+    Serial.println(y);
+    Serial.print("X CONVERTED: ");
+    Serial.println(x_new);
+    Serial.print("Y CONVERTED: ");
+    Serial.println(y_new);
+
+    getAngles(x_new, y_new, pitch, yaw);
+
+    Serial.print("Yaw: ");
+    Serial.println(yaw);
     Serial.print("Pitch: ");
-    Serial.println(pitch * 180 / PI);
-#endif
+    Serial.println(pitch);
 
-    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(yaw, pitch, roll, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
-    delay(75);
+    delay(1000);
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
     delay(100);
-#ifdef PRINT_DEBUG
-    Serial.println("Stopped");
-#endif
+    // // Serial.println("Button pushed");
+    Serial.println(digitalRead(JOY_BTN_PIN));
   }
 }
