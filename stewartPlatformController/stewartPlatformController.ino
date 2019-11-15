@@ -31,7 +31,8 @@
 
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
-#define DISP_TO_ANGLE (1 / (250.0 * 65.5)) // 250 Hz
+#define ALPHA 0.1 // test
+#define DISP_TO_ANGLE (1 / (250.0 * 65.5)) // 250 is the sample freq in hz, so this val will have to calculate instead of hardcode
 
 Servo servo_0;
 Servo servo_1;
@@ -42,12 +43,13 @@ Servo servo_5;
 
 //Variables for Gyroscope - UPDATE!!!
 int g_x, g_y, g_z;
-long g_x_abs, g_y_abs, g_z_abs;
-float d_pitch, d_roll;
+float g_x_avg, g_y_avg, g_z_avg;
+float g_x_abs, g_y_abs, g_z_abs;
+float d_pitch, d_roll; // change in roll and pitch
 
 // CORREctION MATh FOR PITCH AND ROLL CALCS
 // boolean set_gyro_angles; 
-long a_x, a_y, a_z, acc_total_vector;
+// long a_x, a_y, a_z, acc_total_vector;
 //float angle_roll_acc, angle_pitch_acc;
 // int angle_pitch_buffer, angle_roll_buffer;
 // float angle_pitch_output, angle_roll_output;
@@ -256,22 +258,22 @@ void setup()
 
   pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
   setupMPU();
-  // get flat platform values                                        
+                                       
   for (int i = 0; i < MPU_SAMPLE_SIZE; ++i){                  
-    readMPU();
-    //Add the gyro x offset to the gyro_x_cal variable                                            
-    g_x_abs += g_x;
-    //Add the gyro y offset to the gyro_y_cal variable                                              
-    g_y_abs += g_y; 
-    //Add the gyro z offset to the gyro_z_cal variable                                             
-    g_z_abs += g_z; 
-    //Delay 3us to have 250Hz for-loop                                             
-    delay(3);                                                          
+    readMPU();                                    
+    g_x_abs += g_x;                                         
+    g_y_abs += g_y;                                        
+    g_z_abs += g_z;                                            
+    delay(1); // ?                                                          
   }
  
   g_x_abs /= MPU_SAMPLE_SIZE;                                                 
   g_y_abs /= MPU_SAMPLE_SIZE;                                                 
   g_z_abs /= MPU_SAMPLE_SIZE;
+
+  g_x_avg = 
+  g_y_avg = 
+  g_z_avg = 
   loop_timer = micros(); 
   
   Serial.begin(9600);
