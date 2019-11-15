@@ -25,11 +25,9 @@
 #define Z 2
 
 #define HEIGHT 10.8
-#define DISTANCE_TO_LEG 7.1
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
-#define PLATFORM_LENGTH 10
 
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
@@ -58,13 +56,13 @@ long a_x, a_y, a_z, acc_total_vector;
 long loop_timer;
 int temp;
 
-int servo_min[6] = {135,0,180,0,135,0};
-//int servo_max[6] = {135,135,180,175,135,175};
-int servo_max[6] = {0,135,0,175,0,175};
-int current_servo_angles[6] = {0,0,0,0,0,0};
-float rod_length[6] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
-float servo_angle[6] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
-Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
+int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
+//int servo_max[NUM_LEGS] = {135,135,180,175,135,175};
+int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
+int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
+float rod_length[NUM_LEGS] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
+float servo_angle[NUM_LEGS] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
+Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 {
