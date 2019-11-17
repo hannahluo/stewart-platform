@@ -65,12 +65,12 @@ void convertMPUVals() {
   //Gyro angle calculations . Note 0.0000611 = 1 / (250.0Hz x 65.5)
   
   // calculate the traveled pitch angle and add this to the angle_pitch variable
-  d_pitch += g_x_avg * DISP_TO_ANGLE;
-  d_roll += g_y_avg * DISP_TO_ANGLE;
+  d_pitch += g_x_avg * disp_to_angle;
+  d_roll += g_y_avg * disp_to_angle;
 
   // consider yaw and add to proper meas
-  d_pitch += d_roll * sin(g_z_avg * DISP_TO_ANGLE * PI / 180);            
-  d_roll -= d_pitch * sin(g_z_avg * DISP_TO_ANGLE * PI / 180);               
+  d_pitch += d_roll * sin(g_z_avg * disp_to_angle * PI / 180);            
+  d_roll -= d_pitch * sin(g_z_avg * disp_to_angle * PI / 180);               
   
   // future accelerometer calcs
   

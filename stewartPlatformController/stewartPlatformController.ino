@@ -29,10 +29,12 @@
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
 
+#define SERVO_ANGLE_SENSITIVITY 1
+
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
 #define ALPHA 0.1 // test
-#define DISP_TO_ANGLE (1 / (250.0 * 65.5)) // 250 is the sample freq in hz, so this val will have to calculate instead of hardcode
+#define MICROS_PER_LOOP 4000
 
 Servo servo_0;
 Servo servo_1;
@@ -46,10 +48,11 @@ int g_x, g_y, g_z;
 float g_x_avg, g_y_avg, g_z_avg;
 float g_x_abs, g_y_abs, g_z_abs;
 float d_pitch, d_roll; // change in roll and pitch
+float disp_to_angle = (1 / ((1000000 / MICROS_PER_LOOP) * 65.5));
 
 // CORREctION MATh FOR PITCH AND ROLL CALCS
 // boolean set_gyro_angles; 
-// long a_x, a_y, a_z, acc_total_vector;
+long a_x, a_y, a_z, acc_total_vector;
 //float angle_roll_acc, angle_pitch_acc;
 // int angle_pitch_buffer, angle_roll_buffer;
 // float angle_pitch_output, angle_roll_output;
@@ -238,7 +241,11 @@ void writeToServos() {
 #ifdef PRINT_DEBUG
     Serial.println(servoPos);
 #endif
-    servos[i].write(servoPos);
+    if(current_servo_angles[i] + SERVO_ANGLE_SENSITIVITY < servoPos || current_servo_angles[i] - SERVO_ANGLE_SENSITIVITY > servoPos)
+    {
+      servos[i].write(servoPos);
+      current_servo_angles[i] = servoPos;
+    }
   }
 }
 
@@ -271,9 +278,9 @@ void setup()
   g_y_abs /= MPU_SAMPLE_SIZE;                                                 
   g_z_abs /= MPU_SAMPLE_SIZE;
 
-  g_x_avg = 
-  g_y_avg = 
-  g_z_avg = 
+  g_x_avg = g_x_abs;
+  g_y_avg = g_y_abs;
+  g_z_avg = g_z_abs;
   loop_timer = micros(); 
   
   Serial.begin(9600);
@@ -290,9 +297,8 @@ void setup()
     delay(1000);
     servos[i].write((servo_max[i]+servo_min[i])/2);
     delay(1000);
-
   }
-  delay(2500);
+  delay(1000);
   digitalWrite(LED_PIN, LOW);
 }
 
@@ -306,17 +312,22 @@ void loop()
   float heaveAngle = 0;
 
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
-
+    loop_timer = micros(); 
+    readMPU();
+    convertMPUVals();
+    
 #ifdef PRINT_DEBUG
     Serial.print("Roll: ");
-    Serial.println(roll * 180 / PI);
+    Serial.println(d_roll * 180 / PI);
     Serial.print("Pitch: ");
-    Serial.println(pitch * 180 / PI);
+    Serial.println(d_pitch * 180 / PI);
 #endif
 
-    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(d_roll, d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
-    delay(75);
+
+    // Wait to keep the timing consistent
+    while(micros() - loop_timer < MICROS_PER_LOOP){}
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
