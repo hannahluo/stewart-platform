@@ -50,6 +50,8 @@ float g_x_abs, g_y_abs, g_z_abs;
 float d_pitch, d_roll; // change in roll and pitch
 float disp_to_angle = (1 / ((1000000 / MICROS_PER_LOOP) * 65.5));
 
+float zero_pitch, zero_roll;
+
 // CORREctION MATh FOR PITCH AND ROLL CALCS
 // boolean set_gyro_angles; 
 long a_x, a_y, a_z, acc_total_vector;
@@ -263,25 +265,7 @@ void setup()
   servo_4.attach(SERVO_4_PIN);
   servo_5.attach(SERVO_5_PIN);
 
-  pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
-  setupMPU();
-                                       
-  for (int i = 0; i < MPU_SAMPLE_SIZE; ++i){                  
-    readMPU();                                    
-    g_x_abs += g_x;                                         
-    g_y_abs += g_y;                                        
-    g_z_abs += g_z;                                            
-    delay(1); // ?                                                          
-  }
- 
-  g_x_abs /= MPU_SAMPLE_SIZE;                                                 
-  g_y_abs /= MPU_SAMPLE_SIZE;                                                 
-  g_z_abs /= MPU_SAMPLE_SIZE;
-
-  g_x_avg = g_x_abs;
-  g_y_avg = g_y_abs;
-  g_z_avg = g_z_abs;
-  loop_timer = micros(); 
+  pinMode(JOY_BTN_PIN, INPUT_PULLUP);
   
   Serial.begin(9600);
   Serial.println("START");
@@ -298,6 +282,24 @@ void setup()
     servos[i].write((servo_max[i]+servo_min[i])/2);
     delay(1000);
   }
+
+  setupMPU();                                
+  for (int i = 0; i < MPU_SAMPLE_SIZE; ++i){                  
+    readMPU();                                    
+    g_x_abs += g_x;                                         
+    g_y_abs += g_y;                                        
+    g_z_abs += g_z;                                            
+    delay(3);                                                          
+  }
+ 
+  g_x_abs /= MPU_SAMPLE_SIZE;                                                 
+  g_y_abs /= MPU_SAMPLE_SIZE;                                                 
+  g_z_abs /= MPU_SAMPLE_SIZE;
+
+  g_x_avg = g_x_abs;
+  g_y_avg = g_y_abs;
+  g_z_avg = g_z_abs;
+  
   delay(1000);
   digitalWrite(LED_PIN, LOW);
 }
@@ -323,7 +325,7 @@ void loop()
     Serial.println(d_pitch * 180 / PI);
 #endif
 
-    calculateLegLengths(d_roll, d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(-d_roll, -d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
 
     // Wait to keep the timing consistent
