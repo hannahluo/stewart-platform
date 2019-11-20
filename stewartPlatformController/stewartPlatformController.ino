@@ -2,7 +2,7 @@
 #include <math.h>
 #include <Wire.h>
 
-// #define PRINT_DEBUG
+#define PRINT_DEBUG
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
@@ -15,6 +15,8 @@
 #define SERVO_3_PIN 5
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
+
+#define IMU_VCC_PIN
 
 #define PRESSED 0
 
@@ -33,8 +35,8 @@
 
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
-#define ALPHA 0.1 // test
-#define MICROS_PER_LOOP 4000
+#define ALPHA 0.25 // test
+#define MICROS_PER_LOOP 25000
 
 Servo servo_0;
 Servo servo_1;
@@ -63,9 +65,11 @@ long a_x, a_y, a_z, acc_total_vector;
 long loop_timer;
 int temp;
 
-int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
+//int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
+int servo_min[NUM_LEGS] = {120,10,165,10,120,10};
 //int servo_max[NUM_LEGS] = {135,135,180,175,135,175};
-int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
+//int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
+int servo_max[NUM_LEGS] = {10,125,10,165,10,165};
 int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
 float rod_length[NUM_LEGS] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
 float servo_angle[NUM_LEGS] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
@@ -73,12 +77,12 @@ Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 {
-  {3.327,6.467,0},
-  {7.265,-0.350,0},
-  {3.935,-6.117,0},
-  {-3.935,-6.117,0},
-  {-7.265,-0.350,0},
-  {-3.327,6.467,0}
+  {2.694686,5.987542,0},
+  {6.53288,-0.659892,0},
+  {3.83794,-5.32765,0},
+  {-3.83794,-5.32765,0},
+  {-6.53288,-0.659892,0},
+  {-2.694686,5.987542,0}
 };
 float RotationMatrix[3][3];
 float T[3];
@@ -219,7 +223,7 @@ void writeToServos() {
     alpha = (asinNum - atan2(f, e))*180/PI;
     
 #ifdef PRINT_DEBUG
-    Serial.print("pre linaear alpha ");
+    Serial.print("pre linear alpha ");
     Serial.println(alpha);
     Serial.print("e: ");
     Serial.print(e);
@@ -245,7 +249,7 @@ void writeToServos() {
 #endif
     if(current_servo_angles[i] + SERVO_ANGLE_SENSITIVITY < servoPos || current_servo_angles[i] - SERVO_ANGLE_SENSITIVITY > servoPos)
     {
-      servos[i].write(servoPos);
+      //servos[i].write(servoPos);
       current_servo_angles[i] = servoPos;
     }
   }
@@ -325,7 +329,7 @@ void loop()
     Serial.println(d_pitch * 180 / PI);
 #endif
 
-    calculateLegLengths(-d_roll, -d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(d_roll, d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
 
     // Wait to keep the timing consistent
