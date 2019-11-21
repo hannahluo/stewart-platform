@@ -65,27 +65,26 @@ void convertMPUVals() {
   //Gyro angle calculations . Note 0.0000611 = 1 / (250.0Hz x 65.5)
   
   // calculate the traveled pitch angle and add this to the angle_pitch variable
-  d_pitch += g_x_avg * disp_to_angle;
-  d_roll += g_y_avg * disp_to_angle;
+  d_pitch += g_x_avg * disp_to_angle * PI / 180;
+  d_roll += g_y_avg * disp_to_angle * PI / 180;
 
   // consider yaw and add to proper meas
   d_pitch += d_roll * sin(g_z_avg * disp_to_angle * PI / 180);            
   d_roll -= d_pitch * sin(g_z_avg * disp_to_angle * PI / 180);               
   
   // future accelerometer calcs
+
+  a_mag = sqrt((a_x*a_x)+(a_y*a_y)+(a_z*a_z)); 
   
-  //Calculate the total accelerometer vector
-  //acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z)); 
-   
-  //57.296 = 1 / (3.142 / 180) The Arduino asin function is in radians
-  //Calculate the pitch angle
-  //angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296; 
-  //Calculate the roll angle      
-  //angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;       
+  pitch_acc = asin((float)a_y/a_mag)/(PI/180); 
+  roll_acc = asin((float)a_x/a_mag)/(-PI/180);       
   
   //Accelerometer calibration value for pitch
-  //angle_pitch_acc -= 0.0;
+  // angle_pitch_acc -= 0.0;
   //Accelerometer calibration value for roll                                              
-  //angle_roll_acc -= 0.0;                                               
+  // angle_roll_acc -= 0.0;                                               
+  
+  d_pitch = d_pitch * 0.9996 + pitch_acc * 0.0004;  
+  d_roll = d_roll * 0.9996 + roll_acc * 0.0004;                                                
 }
 
