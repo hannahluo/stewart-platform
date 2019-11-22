@@ -27,10 +27,10 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 10.8
+#define HEIGHT 16.1
 #define NUM_LEGS 6
 #define HORN_LENGTH 1.2
-#define ROD_LENGTH 11.2083
+#define ROD_LENGTH 16.9
 
 #define SERVO_ANGLE_SENSITIVITY 5
 #define INPUT_ANGLE_SENSITIVITY 0.01
