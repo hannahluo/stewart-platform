@@ -2,7 +2,7 @@
 #include <math.h>
 #include <Wire.h>
 
-#define PRINT_DEBUG
+//#define PRINT_DEBUG
 #define ANGLE_PRINT_DEBUG
 
 #define JOY_X_PIN A0
@@ -32,13 +32,13 @@
 #define HORN_LENGTH 1.2
 #define ROD_LENGTH 11.2083
 
-#define SERVO_ANGLE_SENSITIVITY 1
+#define SERVO_ANGLE_SENSITIVITY 5
 #define INPUT_ANGLE_SENSITIVITY 0.01
 
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
-#define ALPHA 0.5 // test
-#define MICROS_PER_LOOP 25000
+#define ALPHA 0.25 // test
+#define MICROS_PER_LOOP 100000
 
 Servo servo_0;
 Servo servo_1;
@@ -52,6 +52,7 @@ int g_x, g_y, g_z;
 float g_x_avg, g_y_avg, g_z_avg;
 float g_x_abs, g_y_abs, g_z_abs;
 float d_pitch, d_roll; // change in roll and pitch
+float d_pitch_offset, d_roll_offset;
 float disp_to_angle = (1 / ((1000000 / MICROS_PER_LOOP) * 65.5));
 
 float zero_pitch, zero_roll;
@@ -59,9 +60,9 @@ float zero_pitch, zero_roll;
 // CORREctION MATh FOR PITCH AND ROLL CALCS
 // boolean set_gyro_angles; 
 long a_x, a_y, a_z, a_mag;
+float a_x_avg, a_y_avg, a_z_avg;
+float a_x_abs, a_y_abs, a_z_abs;
 float roll_acc, pitch_acc;
-// int angle_pitch_buffer, angle_roll_buffer;
-// float angle_pitch_output, angle_roll_output;
 
 // Setup timers and temp variables
 long loop_timer;
@@ -72,17 +73,17 @@ int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
 int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
 int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
 float rod_length[NUM_LEGS] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
-float servo_angle[NUM_LEGS] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
+float servo_angle[NUM_LEGS] = {4*PI/3,2*PI/3,2*PI/3,0,0,4*PI/3};
 Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 {
-  {2.694686,5.987542,0},
-  {6.53288,-0.659892,0},
   {3.83794,-5.32765,0},
   {-3.83794,-5.32765,0},
   {-6.53288,-0.659892,0},
-  {-2.694686,5.987542,0}
+  {-2.694686,5.987542,0},
+  {2.694686,5.987542,0},
+  {6.53288,-0.659892,0}
 };
 float RotationMatrix[3][3];
 float T[3];
@@ -273,7 +274,7 @@ void setup()
 
   pinMode(JOY_BTN_PIN, INPUT_PULLUP);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("START");
 
 #ifdef PRINT_DEBUG
@@ -294,17 +295,34 @@ void setup()
     readMPU();                                    
     g_x_abs += g_x;                                         
     g_y_abs += g_y;                                        
-    g_z_abs += g_z;                                            
+    g_z_abs += g_z;
+    a_x_abs += a_x;                                         
+    a_y_abs += a_y;                                        
+    a_z_abs += a_z;                                                
     delay(3);                                                          
   }
  
   g_x_abs /= MPU_SAMPLE_SIZE;                                                 
   g_y_abs /= MPU_SAMPLE_SIZE;                                                 
   g_z_abs /= MPU_SAMPLE_SIZE;
+  a_x_abs /= MPU_SAMPLE_SIZE;                                                 
+  a_y_abs /= MPU_SAMPLE_SIZE;                                                 
+  a_z_abs /= MPU_SAMPLE_SIZE;
 
   g_x_avg = g_x_abs;
   g_y_avg = g_y_abs;
   g_z_avg = g_z_abs;
+  a_x_avg = a_x_abs;
+  a_y_avg = a_y_abs;
+  a_z_avg = a_z_abs;
+
+  //d_roll_offset = atan2(a_y_abs, a_z_abs);
+  //d_pitch_offset = atan2(-a_x_abs, sqrt(a_y_abs*a_y_abs + a_z_abs*a_z_abs));
+  
+  d_roll_offset = 0;
+  d_pitch_offset = 0;
+  d_roll = 0;
+  d_pitch = 0;
   
   delay(1000);
   digitalWrite(LED_PIN, LOW);
@@ -326,8 +344,8 @@ void loop()
     
 #ifdef ANGLE_PRINT_DEBUG
     Serial.print("Roll: ");
-    Serial.println(d_roll * 180 / PI);
-    Serial.print("Pitch: ");
+    Serial.print(d_roll * 180 / PI);
+    Serial.print(",  Pitch: ");
     Serial.println(d_pitch * 180 / PI);
 #endif
 

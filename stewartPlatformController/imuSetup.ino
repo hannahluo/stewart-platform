@@ -54,16 +54,28 @@ void readMPU() {
 }
 
 void convertMPUVals() {
-  g_x -= g_x_abs;                                                
-  g_y -= g_y_abs;                                                
-  g_z -= g_z_abs;                                                
+  float g_x_cur = g_x - g_x_abs;                                                
+  float g_y_cur = g_y - g_y_abs;                                                
+  float g_z_cur = g_z - g_z_abs;
+  float a_x_cur = a_x; // - a_x_abs;                                                
+  float a_y_cur = a_y; // - a_y_abs;                                                
+  float a_z_cur = a_z; // - a_z_abs;                    
 
-  g_x_avg = ALPHA * g_x + (1-ALPHA) * g_x_avg;
-  g_y_avg = ALPHA * g_y + (1-ALPHA) * g_y_avg; 
-  g_z_avg = ALPHA * g_z + (1-ALPHA) * g_z_avg; 
+ /*
+  g_x_avg = ALPHA * (float)g_x + (1-ALPHA) * (float)g_x_avg;
+  g_y_avg = ALPHA * (float)g_y + (1-ALPHA) * (float)g_y_avg; 
+  g_z_avg = ALPHA * (float)g_z + (1-ALPHA) * (float)g_z_avg; 
+  a_x_avg = ALPHA * (float)a_x + (1-ALPHA) * (float)a_x_avg;
+  a_y_avg = ALPHA * (float)a_y + (1-ALPHA) * (float)a_y_avg; 
+  a_z_avg = ALPHA * (float)a_z + (1-ALPHA) * (float)a_z_avg; 
+*/
+  d_roll -= d_roll_offset;
+  d_pitch -= d_pitch_offset;
 
-  //Gyro angle calculations . Note 0.0000611 = 1 / (250.0Hz x 65.5)
-  
+  d_roll = ALPHA * atan2(a_y_cur, a_z_cur) + (1-ALPHA) * d_roll;
+  d_pitch = ALPHA * atan2(-a_x_cur, sqrt(a_y_cur*a_y_cur + a_z_cur*a_z_cur)) + (1-ALPHA) * d_pitch;
+
+  /*
   // calculate the traveled pitch angle and add this to the angle_pitch variable
   d_pitch += g_x_avg * disp_to_angle * PI / 180;
   d_roll += g_y_avg * disp_to_angle * PI / 180;
@@ -77,14 +89,10 @@ void convertMPUVals() {
   a_mag = sqrt((a_x*a_x)+(a_y*a_y)+(a_z*a_z)); 
   
   pitch_acc = asin((float)a_y/a_mag)/(PI/180); 
-  roll_acc = asin((float)a_x/a_mag)/(-PI/180);       
-  
-  //Accelerometer calibration value for pitch
-  // angle_pitch_acc -= 0.0;
-  //Accelerometer calibration value for roll                                              
-  // angle_roll_acc -= 0.0;                                               
+  roll_acc = asin((float)a_x/a_mag)/(-PI/180);                             
   
   d_pitch = d_pitch * 0.9996 + pitch_acc * 0.0004;  
-  d_roll = d_roll * 0.9996 + roll_acc * 0.0004;                                                
+  d_roll = d_roll * 0.9996 + roll_acc * 0.0004;      
+  */                                          
 }
 
