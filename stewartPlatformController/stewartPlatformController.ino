@@ -2,7 +2,7 @@
 #include <math.h>
 #include <Wire.h>
 
-//#define PRINT_DEBUG
+#define PRINT_DEBUG
 #define ANGLE_PRINT_DEBUG
 
 #define JOY_X_PIN A0
@@ -27,12 +27,11 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 10.8
+#define HEIGHT 15.8
 #define NUM_LEGS 6
-#define HORN_LENGTH 1.2
-#define ROD_LENGTH 11.2083
+#define HORN_LENGTH 2.0
 
-#define SERVO_ANGLE_SENSITIVITY 5
+#define SERVO_ANGLE_SENSITIVITY 2.5
 #define INPUT_ANGLE_SENSITIVITY 0.01
 
 #define I2C_ADDR 0x3F // confirm value
@@ -72,7 +71,7 @@ int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
 //int servo_max[NUM_LEGS] = {135,135,180,175,135,175};
 int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
 int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
-float rod_length[NUM_LEGS] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
+float rod_length[NUM_LEGS] = {16.76, 16.76, 16.76, 16.76, 16.76, 16.76};
 float servo_angle[NUM_LEGS] = {4*PI/3,2*PI/3,2*PI/3,0,0,4*PI/3};
 Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
