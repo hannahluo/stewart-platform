@@ -2,7 +2,7 @@
 #include <math.h>
 #include <Wire.h>
 
-#define PRINT_DEBUG
+// #define PRINT_DEBUG
 #define ANGLE_PRINT_DEBUG
 
 #define JOY_X_PIN A0
@@ -27,17 +27,17 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 15.8
+#define HEIGHT 16.8 // 15.8
 #define NUM_LEGS 6
 #define HORN_LENGTH 2.0
 
-#define SERVO_ANGLE_SENSITIVITY 2.5
+#define SERVO_ANGLE_SENSITIVITY 2
 #define INPUT_ANGLE_SENSITIVITY 0.01
 
 #define I2C_ADDR 0x3F // confirm value
 #define MPU_SAMPLE_SIZE 1000
-#define ALPHA 0.25 // test
-#define MICROS_PER_LOOP 100000
+#define ALPHA 0.18 // test
+#define MICROS_PER_LOOP 125000
 
 Servo servo_0;
 Servo servo_1;
@@ -67,11 +67,10 @@ float roll_acc, pitch_acc;
 long loop_timer;
 int temp;
 
-int servo_min[NUM_LEGS] = {135,0,180,0,135,0};
-//int servo_max[NUM_LEGS] = {135,135,180,175,135,175};
-int servo_max[NUM_LEGS] = {0,135,0,175,0,175};
+int servo_min[NUM_LEGS] = {180,0,180,0,180,0};
+int servo_max[NUM_LEGS] = {0,180,0,180,0,180};
 int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
-float rod_length[NUM_LEGS] = {16.76, 16.76, 16.76, 16.76, 16.76, 16.76};
+float rod_length[NUM_LEGS] = {16.33, 16.51, 16.44, 16.51, 16.56, 16.28};
 float servo_angle[NUM_LEGS] = {4*PI/3,2*PI/3,2*PI/3,0,0,4*PI/3};
 Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
@@ -237,6 +236,7 @@ void writeToServos() {
     Serial.println((int)alpha);
 #endif
     int servoPos;
+    /*
     if (i % 2) {
       alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
       servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
@@ -245,13 +245,17 @@ void writeToServos() {
       alpha = (servo_min[i] - servo_max[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_max[i];
       servoPos = constrain(90 + (int)alpha, servo_max[i], servo_min[i]);
     }
+    */
+    servoPos = 90 + (int)alpha;
+    servoPos = constrain(servoPos, SERVO_MIN, SERVO_MAX);
 
 #ifdef PRINT_DEBUG
     Serial.println(servoPos);
 #endif
     if(current_servo_angles[i] + SERVO_ANGLE_SENSITIVITY < servoPos || current_servo_angles[i] - SERVO_ANGLE_SENSITIVITY > servoPos)
     {
-      servos[i].write(servoPos);
+      int servoPosUs = getMsForAngle(servoPos, i);
+      servos[i].writeMicroseconds(servoPosUs);
       current_servo_angles[i] = servoPos;
     }
   }
@@ -283,9 +287,7 @@ void setup()
 #endif
 
   for(int i = 0; i < 6; ++i) {
-    servos[i].write(servo_min[i]);
-    delay(1000);
-    servos[i].write((servo_max[i]+servo_min[i])/2);
+    servos[i].writeMicroseconds(getMsForAngle(90,i));
     delay(1000);
   }
 
