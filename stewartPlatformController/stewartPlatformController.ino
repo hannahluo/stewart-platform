@@ -300,7 +300,7 @@ void setup()
     a_x_abs += a_x;                                         
     a_y_abs += a_y;                                        
     a_z_abs += a_z;                                                
-    delay(3);                                                          
+    delay(1);                                                          
   }
  
   g_x_abs /= MPU_SAMPLE_SIZE;                                                 
@@ -325,7 +325,6 @@ void setup()
   d_roll = 0;
   d_pitch = 0;
   
-  delay(1000);
   digitalWrite(LED_PIN, LOW);
 }
 
@@ -350,7 +349,7 @@ void loop()
     Serial.println(d_pitch * 180 / PI);
 #endif
 
-    calculateLegLengths(-d_roll, -d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(-1.1*d_roll, -1.1*d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
 
     // Wait to keep the timing consistent
