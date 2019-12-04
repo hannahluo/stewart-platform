@@ -1,8 +1,9 @@
-    
 #include <Servo.h>
 #include <math.h>
+#include <Wire.h>
 
 // #define PRINT_DEBUG
+#define ANGLE_PRINT_DEBUG
 
 #define JOY_X_PIN A0
 #define JOY_Y_PIN A1
@@ -16,12 +17,7 @@
 #define SERVO_4_PIN 6
 #define SERVO_5_PIN 7
 
-#define DEAD_ZONE_MIN 485
-#define DEAD_ZONE_MAX 530
-#define MAX_INPUT 1023
-#define MIN_INPUT 0
-#define MAX_CONVERTED_INPUT 50
-#define MIN_CONVERTED_INPUT -50
+#define IMU_VCC_PIN
 
 #define PRESSED 0
 
@@ -31,12 +27,18 @@
 #define Y 1
 #define Z 2
 
-#define HEIGHT 10.8
-#define DISTANCE_TO_LEG 7.1
+#define HEIGHT 16.8 // 15.8
 #define NUM_LEGS 6
-#define HORN_LENGTH 1.2
-#define ROD_LENGTH 11.2083
-#define PLATFORM_LENGTH 10
+#define HORN_LENGTH 2.0
+
+#define SERVO_ANGLE_SENSITIVITY 2
+#define INPUT_ANGLE_SENSITIVITY 0.01
+
+#define I2C_ADDR 0x3F // confirm value
+#define MPU_SAMPLE_SIZE 1000
+#define ALPHA 0.18 // test
+#define MICROS_PER_LOOP 125000
+
 Servo servo_0;
 Servo servo_1;
 Servo servo_2;
@@ -44,35 +46,48 @@ Servo servo_3;
 Servo servo_4;
 Servo servo_5;
 
-int servo_min[6] = {135,0,180,0,135,0};
-//int servo_max[6] = {135,135,180,175,135,175};
-int servo_max[6] = {0,135,0,175,0,175};
-float rod_length[6] = {11.20, 11.23, 11.23, 11.05, 11.24, 11.32};
-// WE NEED TO MEASURE THESE OKAY PLEASE MEASURE THEM BEFORE U TRY TO RUN THE CODE SOMEONE!!
-// https://www.xarg.org/paper/inverse-kinematics-of-a-stewart-platform/
-// IT'S THE ANGLE BETA FOUND HERE
-// DO THIS FOR EACH SERVO AND RECORD THE RESULTS IN THE ARRAY BELOW THANKS
-float servo_angle[6] = {0,4*PI/3,4*PI/3,2*PI/3,2*PI/3,0};
-Servo servos[6] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
+//Variables for Gyroscope - UPDATE!!!
+int g_x, g_y, g_z;
+float g_x_avg, g_y_avg, g_z_avg;
+float g_x_abs, g_y_abs, g_z_abs;
+float d_pitch, d_roll; // change in roll and pitch
+float d_pitch_offset, d_roll_offset;
+float disp_to_angle = (1 / ((1000000 / MICROS_PER_LOOP) * 65.5));
+
+float zero_pitch, zero_roll;
+
+// CORREctION MATh FOR PITCH AND ROLL CALCS
+// boolean set_gyro_angles; 
+long a_x, a_y, a_z, a_mag;
+float a_x_avg, a_y_avg, a_z_avg;
+float a_x_abs, a_y_abs, a_z_abs;
+float roll_acc, pitch_acc;
+
+// Setup timers and temp variables
+long loop_timer;
+int temp;
+
+int servo_min[NUM_LEGS] = {180,0,180,0,180,0};
+int servo_max[NUM_LEGS] = {0,180,0,180,0,180};
+int current_servo_angles[NUM_LEGS] = {0,0,0,0,0,0};
+float rod_length[NUM_LEGS] = {16.33, 16.51, 16.44, 16.51, 16.56, 16.28};
+float servo_angle[NUM_LEGS] = {4*PI/3,2*PI/3,2*PI/3,0,0,4*PI/3};
+Servo servos[NUM_LEGS] = {servo_0,servo_1,servo_2,servo_3,servo_4,servo_5};
 
 float DistanceToLegsFromOrigin[NUM_LEGS][3] =
 {
-  {3.327,6.467,0},
-  {7.265,-0.350,0},
-  {3.935,-6.117,0},
-  {-3.935,-6.117,0},
-  {-7.265,-0.350,0},
-  {-3.327,6.467,0}
+  {3.83794,-5.32765,0},
+  {-3.83794,-5.32765,0},
+  {-6.53288,-0.659892,0},
+  {-2.694686,5.987542,0},
+  {2.694686,5.987542,0},
+  {6.53288,-0.659892,0}
 };
 float RotationMatrix[3][3];
 float T[3];
 float P[3];
 float LegVectors[NUM_LEGS][3];
 float Lengths[NUM_LEGS];
-
-float MaxInputL = (MAX_CONVERTED_INPUT - MIN_CONVERTED_INPUT) / 2.0; // This makes the max in the corners equal to circles
-float MaxTilt = atan2(2 * HORN_LENGTH, PLATFORM_LENGTH);
-float DeltaInputZ = HEIGHT * ( 1.0 - cos(MaxTilt));
 
 float getLengthOfVector3(const float vector[3])
 {
@@ -177,6 +192,8 @@ float computePlatformLengthBetweenLegs(int a, int b)
 
 void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, float swayAngle, float heaveAngle)
 {
+  if (abs(roll) < INPUT_ANGLE_SENSITIVITY && abs(pitch) < INPUT_ANGLE_SENSITIVITY) return;
+  if(abs(roll) > 30 * 180 / PI || abs(pitch) > 30 * 180 / PI) return;
   fillRotationMatrix(roll,pitch,yaw);
   computeTVector(surgeAngle, swayAngle, heaveAngle);
   for(int i = 0; i < NUM_LEGS; ++i)
@@ -186,20 +203,6 @@ void calculateLegLengths(float roll, float pitch, float yaw, float surgeAngle, f
     }
 }
 
-void getAngles(int x, int y, float& roll, float& pitch)
-{
-  // Calculate a z for the vector defining the rotation - The lower the z the more tilted the platform
-  // First maps the intensity of the joystick angle to a fraction of the change in height
-  // At its lowest the fraction will be 0 and the height equal to base Height
-  // At its highest the fraction will be 1.0 and the height will be lowered by DeltaInputZ
-  // All values in between are approximately linearized 
-  float zv = HEIGHT - min(sqrt(pow(x,2) + pow(y,2)) / MaxInputL, 1.0) * DeltaInputZ;
-  float xv = x *1.0 / MAX_CONVERTED_INPUT;
-  float yv = y *1.0 / MAX_CONVERTED_INPUT;
-  roll = atan2(yv, zv);
-  float len = sqrt(pow(zv,2) + pow(yv,2));
-  pitch = atan2(xv,len) ;
-}
 void writeToServos() {
   float e, f, g;
   float legLength, legX, legY, legZ;
@@ -221,7 +224,7 @@ void writeToServos() {
     alpha = (asinNum - atan2(f, e))*180/PI;
     
 #ifdef PRINT_DEBUG
-    Serial.print("pre linaear alpha ");
+    Serial.print("pre linear alpha ");
     Serial.println(alpha);
     Serial.print("e: ");
     Serial.print(e);
@@ -232,13 +235,8 @@ void writeToServos() {
     Serial.print(", alpha: ");
     Serial.println((int)alpha);
 #endif
-    // alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
-    
     int servoPos;
-//    if (i == 1) 
-//      servoPos = constrain(90 + (int)alpha, servo_min[i], servo_max[i]);
-//    else
-//      servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
+    /*
     if (i % 2) {
       alpha = (servo_max[i] - servo_min[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_min[i];
       servoPos = constrain(90 - (int)alpha, servo_min[i], servo_max[i]);
@@ -247,18 +245,26 @@ void writeToServos() {
       alpha = (servo_min[i] - servo_max[i])*(alpha - SERVO_MIN)/(SERVO_MAX - SERVO_MIN) + servo_max[i];
       servoPos = constrain(90 + (int)alpha, servo_max[i], servo_min[i]);
     }
+    */
+    servoPos = 90 + (int)alpha;
+    servoPos = constrain(servoPos, SERVO_MIN, SERVO_MAX);
 
 #ifdef PRINT_DEBUG
     Serial.println(servoPos);
 #endif
-
-    servos[i].write(servoPos);
-    
+    if(current_servo_angles[i] + SERVO_ANGLE_SENSITIVITY < servoPos || current_servo_angles[i] - SERVO_ANGLE_SENSITIVITY > servoPos)
+    {
+      int servoPosUs = getMsForAngle(servoPos, i);
+      servos[i].writeMicroseconds(servoPosUs);
+      current_servo_angles[i] = servoPos;
+    }
   }
 }
 
 void setup()
 {
+  Wire.begin();
+  
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);    
 
@@ -269,11 +275,9 @@ void setup()
   servo_4.attach(SERVO_4_PIN);
   servo_5.attach(SERVO_5_PIN);
 
-  pinMode(JOY_X_PIN, INPUT);
-  pinMode(JOY_Y_PIN, INPUT);
-  pinMode(JOY_BTN_PIN, INPUT_PULLUP); 
-
-  Serial.begin(9600);
+  pinMode(JOY_BTN_PIN, INPUT_PULLUP);
+  
+  Serial.begin(115200);
   Serial.println("START");
 
 #ifdef PRINT_DEBUG
@@ -283,13 +287,44 @@ void setup()
 #endif
 
   for(int i = 0; i < 6; ++i) {
-    servos[i].write(servo_min[i]);
+    servos[i].writeMicroseconds(getMsForAngle(90,i));
     delay(1000);
-    servos[i].write((servo_max[i]+servo_min[i])/2);
-    delay(1000);
-
   }
-  delay(2500);
+
+  setupMPU();                                
+  for (int i = 0; i < MPU_SAMPLE_SIZE; ++i){                  
+    readMPU();                                    
+    g_x_abs += g_x;                                         
+    g_y_abs += g_y;                                        
+    g_z_abs += g_z;
+    a_x_abs += a_x;                                         
+    a_y_abs += a_y;                                        
+    a_z_abs += a_z;                                                
+    delay(1);                                                          
+  }
+ 
+  g_x_abs /= MPU_SAMPLE_SIZE;                                                 
+  g_y_abs /= MPU_SAMPLE_SIZE;                                                 
+  g_z_abs /= MPU_SAMPLE_SIZE;
+  a_x_abs /= MPU_SAMPLE_SIZE;                                                 
+  a_y_abs /= MPU_SAMPLE_SIZE;                                                 
+  a_z_abs /= MPU_SAMPLE_SIZE;
+
+  g_x_avg = g_x_abs;
+  g_y_avg = g_y_abs;
+  g_z_avg = g_z_abs;
+  a_x_avg = a_x_abs;
+  a_y_avg = a_y_abs;
+  a_z_avg = a_z_abs;
+
+  //d_roll_offset = atan2(a_y_abs, a_z_abs);
+  //d_pitch_offset = atan2(-a_x_abs, sqrt(a_y_abs*a_y_abs + a_z_abs*a_z_abs));
+  
+  d_roll_offset = 0;
+  d_pitch_offset = 0;
+  d_roll = 0;
+  d_pitch = 0;
+  
   digitalWrite(LED_PIN, LOW);
 }
 
@@ -303,35 +338,22 @@ void loop()
   float heaveAngle = 0;
 
   while (digitalRead(JOY_BTN_PIN) != PRESSED) {
-    int x = analogRead(JOY_X_PIN);
-    int y = analogRead(JOY_Y_PIN);
-    int x_new = convert_xy_value(x);
-    int y_new = convert_xy_value(y);
-
-#ifdef PRINT_DEBUG
-    Serial.println("--------------");
-    Serial.print("X: ");
-    Serial.println(x);
-    Serial.print("Y: ");
-    Serial.println(y);
-    Serial.print("X CONVERTED: ");
-    Serial.println(x_new);
-    Serial.print("Y CONVERTED: ");
-    Serial.println(y_new);
-#endif
-
-    getAngles(x_new, y_new, roll, pitch);
-
-#ifdef PRINT_DEBUG
+    loop_timer = micros(); 
+    readMPU();
+    convertMPUVals();
+    
+#ifdef ANGLE_PRINT_DEBUG
     Serial.print("Roll: ");
-    Serial.println(roll * 180 / PI);
-    Serial.print("Pitch: ");
-    Serial.println(pitch * 180 / PI);
+    Serial.print(d_roll * 180 / PI);
+    Serial.print(",  Pitch: ");
+    Serial.println(d_pitch * 180 / PI);
 #endif
 
-    calculateLegLengths(roll, pitch, yaw, surgeAngle, swayAngle, heaveAngle);
+    calculateLegLengths(-1.1*d_roll, -1.1*d_pitch, yaw, surgeAngle, swayAngle, heaveAngle);
     writeToServos();
-    delay(75);
+
+    // Wait to keep the timing consistent
+    while(micros() - loop_timer < MICROS_PER_LOOP){}
   }
 
   while (digitalRead(JOY_BTN_PIN) == PRESSED) {
